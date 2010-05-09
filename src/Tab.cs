@@ -803,7 +803,7 @@ public class Tab
 				}
 		} while (changed);
 		foreach (Symbol sym in nonterminals)
-			if (sym.deletable) errors.Warning("  " + sym.name + " deletable");
+			if (sym.deletable && sym != gramSy) errors.Warning("  " + sym.name + " deletable");
 	}
 
 	public void RenumberPragmas() {
