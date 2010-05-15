@@ -1,1 +1,1 @@
-%windir%\Microsoft.Net\Framework\v1.1.4322\csc.exe /out:Coco.exe /t:exe src\*.cs
+%windir%\Microsoft.Net\Framework\v2.0.50727\MSBuild.exe Coco.sln /p:Configuration=Release /p:Platform="Any CPU"

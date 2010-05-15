@@ -40,7 +40,7 @@ namespace at.jku.ssw.Coco {
 // Parser
 // ----------------------------------------------------------------------------
 //! A Coco/R Parser
-public class Parser
+public partial class Parser
 {
 	public const int _EOF = 0;
 	public const int _ident = 1;
@@ -769,7 +769,7 @@ public class Errors
 	public System.IO.TextWriter errorStream = Console.Out;   // error messages go to this stream
 	public string errMsgFormat = "-- line {0} col {1}: {2}"; // 0=line, 1=column, 2=text
 
-	static public string strerror(int n) {
+	static string strerror(int n) {
 		switch (n) {
 			case 0: return "EOF expected";
 			case 1: return "ident expected";
@@ -833,26 +833,31 @@ public class Errors
 	}
 
 	public void SynErr (int line, int col, int n) {
-		errorStream.WriteLine(errMsgFormat, line, col, strerror(n));
-		count++;
+		WriteError(line, col, strerror(n));
 	}
 
 	public void SemErr (int line, int col, string s) {
-		errorStream.WriteLine(errMsgFormat, line, col, s);
-		count++;
+		WriteError(line, col, s);
 	}
 
 	public void SemErr (string s) {
-		errorStream.WriteLine(s);
-		count++;
+		WriteError(0, 0, s);
 	}
 
-	public void Warning (int line, int col, string s) {
+	public virtual void Warning (int line, int col, string s) {
 		errorStream.WriteLine(errMsgFormat, line, col, s);
 	}
 
-	public void Warning(string s) {
+	public virtual void Warning(string s) {
 		errorStream.WriteLine(s);
+	}
+	
+	public virtual void WriteError(int line, int col, string message) {
+		if (line > 0)
+			errorStream.WriteLine(errMsgFormat, line, col, message);
+		else
+			errorStream.WriteLine(message);
+		count++;
 	}
 } // Errors
 

@@ -1,1 +1,1 @@
-coco src\Coco-cs.atg -bak
+bin\Release\coco src\Coco-cs.atg -bak
