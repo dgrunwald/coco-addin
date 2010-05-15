@@ -30,7 +30,7 @@ License
 
 using System;
 using System.IO;
-using System.Collections;
+using System.Collections.Generic;
 
 namespace at.jku.ssw.Coco {
 
@@ -240,7 +240,7 @@ public class UTF8Buffer: Buffer
 // Scanner
 //-----------------------------------------------------------------------------
 //! A Coco/R Scanner
-public class Scanner
+public partial class Scanner
 {
 	const char EOL = '\n';
 	const int eofSym = 0; /* pdt */
@@ -256,7 +256,7 @@ public class Scanner
 	int col;          //!< column number of current character
 	int line;         //!< line number of current character
 	int oldEols;      //!< EOLs that appeared in a comment;
-	static readonly Hashtable start; //!< maps first token character to start state
+	static readonly Dictionary<int, int> start; //!< maps first token character to start state
 
 	Token tokens;     //!< list of tokens already peeked (first token is a dummy)
 	Token pt;         //!< current peek token
@@ -265,7 +265,7 @@ public class Scanner
 	int tlen;         //!< length of current token
 
 	static Scanner() {
-		start = new Hashtable(128);
+		start = new Dictionary<int, int>(128);
 		for (int i = 65; i <= 90; ++i) start[i] = 1;
 		for (int i = 95; i <= 95; ++i) start[i] = 1;
 		for (int i = 97; i <= 122; ++i) start[i] = 1;
@@ -428,8 +428,8 @@ public class Scanner
 		t = new Token();
 		t.pos = pos; t.col = col; t.line = line;
 		int state;
-		if (start.ContainsKey(ch)) { state = (int) start[ch]; }
-		else { state = 0; }
+		if (!start.TryGetValue(ch, out state))
+			state = 0;
 		tlen = 0; AddCh();
 
 		switch (state) {
