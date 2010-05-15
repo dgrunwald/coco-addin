@@ -38,16 +38,21 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AbstractParserGen.cs" />
     <Compile Include="Coco.cs" />
     <Compile Include="DFA.cs" />
     <Compile Include="Parser.cs">
       <DependentUpon>Coco-cs.atg</DependentUpon>
     </Compile>
     <Compile Include="ParserGen.cs" />
+    <Compile Include="PushParserGen.cs" />
     <Compile Include="Scanner.cs">
       <DependentUpon>Coco-cs.atg</DependentUpon>
     </Compile>
     <Compile Include="Tab.cs" />
+    <None Include="PushParser.frame">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="trace.txt">
       <DependentUpon>Coco-cs.atg</DependentUpon>
     </None>

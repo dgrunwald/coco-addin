@@ -40,31 +40,16 @@ namespace at.jku.ssw.Coco {
 // ParserGen
 // ----------------------------------------------------------------------------
 //! Generation of the Recursive Descent Parser
-public class ParserGen
+public class ParserGen : AbstractParserGen
 {
-	const int maxTerm = 3;      //!< sets of size < maxTerm are enumerated
-	const char CR  = '\r';
-	const char LF  = '\n';
-
 	const int tErr    = 0;      //!< error codes
 	const int altErr  = 1;
 	const int syncErr = 2;
 
-	public Position preamblePos = null;   //!< position of "using" definitions from attributed grammar
-	public Position semDeclPos = null;    //!< position of global semantic declarations
-
 	int errorNr;      //!< highest parser error number
 	Symbol curSy;     //!< symbol whose production is currently generated
-	FileStream fram;  //!< parser frame file
-	StreamWriter gen; //!< generated parser source file
 	StringWriter err; //!< generated parser error messages
-	ArrayList symSet = new ArrayList();
 
-	Tab tab;          // other Coco objects
-
-	void Indent (int n) {
-		for (int i=0; i < n; ++i) gen.Write('\t');
-	}
 
 	bool Overlaps(BitArray s1, BitArray s2) {
 		int len = s1.Count;
@@ -95,22 +80,6 @@ public class ParserGen
 		return nAlts > 5;
 	}
 
-	void CopyFramePart(string stop, bool doOutput) {
-		bool ok = tab.CopyFramePart(fram, gen, stop, doOutput);
-		if (!ok)
-		{
-			throw new FatalError("Incomplete or corrupt parser frame file");
-		}
-	}
-
-	void CopyFramePart(string stop) {
-		CopyFramePart(stop, true);
-	}
-
-	void CopySourcePart(Position pos, int indent) {
-		tab.CopySourcePart(gen, pos, indent);
-	}
-
 	void GenErrorMsg (int errTyp, Symbol sym) {
 		errorNr++;
 		err.Write("\t\t\tcase " + errorNr + ": return \"");
@@ -123,13 +92,6 @@ public class ParserGen
 			case syncErr: err.Write("this symbol not expected in " + sym.name); break;
 		}
 		err.WriteLine("\";");
-	}
-
-	int NewCondSet (BitArray s) {
-		for (int i = 1; i < symSet.Count; i++) // skip symSet[0] (reserved for union of SYNC sets)
-			if (Sets.Equals(s, (BitArray)symSet[i])) return i;
-		symSet.Add(s.Clone());
-		return symSet.Count - 1;
 	}
 
 	void GenCond (BitArray s, Node p) {
@@ -320,36 +282,7 @@ public class ParserGen
 		}
 	}
 
-	void InitSets() {
-		for (int i = 0; i < symSet.Count; i++) {
-			BitArray s = (BitArray)symSet[i];
-			gen.Write("\t\t{");
-			int j = 0;
-			foreach (Symbol sym in tab.terminals) {
-				if (s[sym.n]) gen.Write("T,"); else gen.Write("x,");
-				++j;
-				if (j % 4 == 0) gen.Write(" ");
-			}
-			if (i == symSet.Count-1) gen.WriteLine("x}"); else gen.WriteLine("x},");
-		}
-	}
-
-	void OpenGen() {
-		try {
-			string fn = Path.Combine
-			(
-				tab.outDir,
-				(tab.prefixName == null ? "" : tab.prefixName) + "Parser.cs"
-			);
-
-			if (tab.makeBackup && File.Exists(fn)) File.Copy(fn, fn + ".bak", true);
-			gen = new StreamWriter(new FileStream(fn, FileMode.Create)); /* pdt */
-		} catch (IOException) {
-			throw new FatalError("Cannot generate parser file");
-		}
-	}
-
-	public void WriteParser () {
+	public override void WriteParser () {
 		int oldPos = tab.buffer.Pos;  // Pos is modified by CopySourcePart
 		symSet.Add(tab.allSyncSets);
 		string fr = Path.Combine(tab.srcDir, "Parser.frame");
@@ -398,12 +331,11 @@ public class ParserGen
 		tab.buffer.Pos = oldPos;
 	}
 
-	public void PrintStatistics () {
+	public override void PrintStatistics () {
 		tab.trace.WriteLine("{0} sets", symSet.Count);
 	}
 
-	public ParserGen (Parser parser) {
-		tab = parser.tab;
+	public ParserGen (Parser parser) : base(parser) {
 		errorNr = -1;
 	}
 

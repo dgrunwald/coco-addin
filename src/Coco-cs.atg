@@ -45,7 +45,7 @@ $namespace=at.jku.ssw.Coco   // grammar directive
 
 	public Tab tab;             // other Coco objects referenced in this ATG
 	public DFA dfa;
-	public ParserGen pgen;
+	public AbstractParserGen pgen;
 
 	bool   genScanner = false;
 	string tokenString;         // used in declarations of literal tokens
@@ -100,7 +100,10 @@ Coco                            (. Symbol sym; Graph g; string grammarName; Char
     { ANY }                     (. pgen.preamblePos = new Position(beg, la.pos, 0); .)
   ]
 
-  "COMPILER"                    (. genScanner = true; .)
+  (
+    "COMPILER"      (. genScanner = true; .)
+  | "PUSHCOMPILER"  (. genScanner = false; Position preamblePos = pgen.preamblePos; pgen = new PushParserGen(this); pgen.preamblePos = preamblePos; .)
+  )
   ident                         (. grammarName = t.val; .)
 
   // semantic declarations - ie, class members and methods
@@ -168,8 +171,8 @@ Coco                            (. Symbol sym; Graph g; string grammarName; Char
                                      tab.CompSymbolSets();
                                      if (tab.ddt[7]) tab.XRef();
                                      if (tab.GrammarOk()) {
-                                       Console.Write("parser");
                                        pgen.WriteParser();
+                                       Console.Write("parser");
                                        if (genScanner) {
                                          Console.Write(" + scanner");
                                          dfa.WriteScanner();
