@@ -705,18 +705,23 @@ public class Tab
 		return a;
 	}
 
-	void FindAS(Node p) { // find ANY sets
+	void FindAS(Node p, Symbol nonTerminal) { // find ANY sets
 		Node a;
 		while (p != null) {
 			if (p.typ == Node.opt || p.typ == Node.iter) {
-				FindAS(p.sub);
+				FindAS(p.sub, nonTerminal);
 				a = LeadingAny(p.sub);
-				if (a != null) Sets.Subtract(a.set, First(p.next));
+				if (a != null) {
+					if (p.next == null)
+						Sets.Subtract(a.set, nonTerminal.follow);
+					else
+						Sets.Subtract(a.set, First(p.next));
+				}
 			} else if (p.typ == Node.alt) {
 				BitArray s1 = new BitArray(terminals.Count);
 				Node q = p;
 				while (q != null) {
-					FindAS(q.sub);
+					FindAS(q.sub, nonTerminal);
 					a = LeadingAny(q.sub);
 					if (a != null)
 						Sets.Subtract(a.set, First(q.down).Or(s1));
@@ -744,7 +749,9 @@ public class Tab
 	}
 
 	void CompAnySets() {
-		foreach (Symbol sym in nonterminals) FindAS(sym.graph);
+		foreach (Symbol sym in nonterminals) {
+			FindAS(sym.graph, sym);
+		}
 	}
 
 	public BitArray Expected(Node p, Symbol curSy) {
@@ -814,8 +821,8 @@ public class Tab
 	public void CompSymbolSets() {
 		CompDeletableSymbols();
 		CompFirstSets();
-		CompAnySets();
 		CompFollowSets();
+		CompAnySets();
 		CompSyncSets();
 		if (ddt[1]) {
 			trace.WriteLine();
