@@ -56,8 +56,12 @@
     <None Include="Coco-cs.atg">
       <Generator>CocoParserGenerator</Generator>
     </None>
-    <None Include="Parser.frame" />
-    <None Include="Scanner.frame" />
+    <None Include="Parser.frame">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Scanner.frame">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
 </Project>
