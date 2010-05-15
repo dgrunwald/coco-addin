@@ -53,4 +53,8 @@ autom4te.cache
 # ignore .tags in the main directory
 /.tags
 
+# ignore VS build output
+/bin/
+/src/obj/
+
 # end-of-file
