@@ -1,53 +1,63 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="3.5" DefaultTargets="Usage" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
-  <Target Name="Usage">
-    <Message Text="Possible Targets:"/>
-    <Message Text="  clean: Full clean up."/>
-    <Message Text="  build: Build Coco/R."/>
-    <Message Text="  debug: Build Coco/R."/>
-    <Message Text="  self: Create the parser and scanner from the atg."/>
-    <Message Text=" "/>
-    <Message Text="Example:  msbuild /t:clean"/>
-  </Target>
-
-  <Target Name="clean">
-    <Delete Files="$(AppName).exe" Condition="Exists('$(AppName).exe')"/>
-    <Delete Files="$(AppName).pdb" Condition="Exists('$(AppName).pdb')"/>
-  </Target>
-
+<Project ToolsVersion="2.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <ProjectGuid>{5D7D2C32-1ED6-471D-AA54-83EC5EAAFBBA}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>at.jku.ssw.Coco</RootNamespace>
+    <AssemblyName>Coco</AssemblyName>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
+    <NoStdLib>False</NoStdLib>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <OutputPath>..\bin\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RegisterForComInterop>False</RegisterForComInterop>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <StartAction>Project</StartAction>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>False</DebugSymbols>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Coco.cs" />
-    <Compile Include="Scanner.cs" />
-    <Compile Include="Tab.cs" />
     <Compile Include="DFA.cs" />
+    <Compile Include="Parser.cs">
+      <DependentUpon>Coco-cs.atg</DependentUpon>
+    </Compile>
     <Compile Include="ParserGen.cs" />
-    <Compile Include="Parser.cs" />
+    <Compile Include="Scanner.cs">
+      <DependentUpon>Coco-cs.atg</DependentUpon>
+    </Compile>
+    <Compile Include="Tab.cs" />
+    <None Include="trace.txt">
+      <DependentUpon>Coco-cs.atg</DependentUpon>
+    </None>
   </ItemGroup>
-
-  <Target Name="build">
-    <Message Text="Building Coco/R..."/>
-    <Csc Sources="@(Compile)" OutputAssembly="$(AppName).exe" EmitDebugInformation="false" Optimize="true"/>
-  </Target>
-
-  <Target Name="debug">
-    <Message Text="Building Debug Version of Coco/R..."/>
-    <Csc Sources="@(Compile)" OutputAssembly="$(AppName).exe" EmitDebugInformation="true"/>
-  </Target>
-
-  <Target Name="self">
-    <Message Text="Self Build Coco/R..."/>
-    <Exec Command="$(AppName).exe -namespace at.jku.ssw.Coco Coco-cs.atg"/>
-  </Target>
-
-  <PropertyGroup>
-    <AppName>Coco</AppName>
-    <OutputPath>.</OutputPath>
-    <OutputType>Exe</OutputType>
-    <TargetFrameworkVersion>v1.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-
+  <ItemGroup>
+    <None Include="Coco-cs.atg">
+      <Generator>CocoParserGenerator</Generator>
+    </None>
+    <None Include="Parser.frame" />
+    <None Include="Scanner.frame" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
 </Project>
