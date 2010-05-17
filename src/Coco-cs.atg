@@ -74,7 +74,7 @@ TOKENS
 PRAGMAS
     ddtSym    = '$' { digit | letter }.  (. tab.SetDDT(la.val); .)
     directive = '$' letter { letter } '='
-        { digit | letter | '-' | '.' | ':' } .
+        { digit | letter | '-' | '.' | ':' | '/' | '\\' } .
                                 (. tab.DispatchDirective(la.val); .)
 
 

@@ -1252,6 +1252,14 @@ public class Tab
 					Console.WriteLine("using prefix: '" + prefixName + "'");
 				}
 				break;
+			case "frameDir":
+				// set frameDir only if not already set
+				if (frameDir == null)
+				{
+					frameDir = value;
+					Console.WriteLine("using frame dir: '" + frameDir + "'");
+				}
+				break;
 			case "trace":
 				SetDDT(value);
 				break;
@@ -1260,10 +1268,13 @@ public class Tab
 					case "EXPLICIT_EOF":
 						explicitEOF = true;
 						break;
+					default:
+						errors.Warning("ignoring unknown define: '" + value + "'");
+						break;
 				}
 				break;
 			default:
-				Console.WriteLine("ignoring unknown pragma: '" + name + "'");
+				errors.Warning("ignoring unknown pragma: '" + name + "'");
 				break;
 		}
 	}
