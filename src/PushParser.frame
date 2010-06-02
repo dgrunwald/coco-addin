@@ -58,6 +58,11 @@ partial class Parser {
 		-->informToken
 	}
 	
+	public void Advance()
+	{
+		InformToken(null);
+	}
+	
 	static readonly bool[,] set = {
 -->initialization
 	};

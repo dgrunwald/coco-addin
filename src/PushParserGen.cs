@@ -94,6 +94,8 @@ namespace at.jku.ssw.Coco
 						break;
 					case Node.any:
 					case Node.t: // terminal
+						Indent(indent);
+						gen.WriteLine("if (t == null) break;");
 						if (node.typ == Node.t) {
 							Indent(indent);
 							gen.WriteLine("Expect({0}, t); // {1}", node.sym.n, node.sym.name);
@@ -107,6 +109,8 @@ namespace at.jku.ssw.Coco
 						break;
 					case Node.iter:
 					case Node.opt:
+						Indent(indent);
+						gen.WriteLine("if (t == null) break;");
 						Indent(indent++);
 						gen.Write("if (");
 						GenCond(tab.First(node.sub));
@@ -119,6 +123,8 @@ namespace at.jku.ssw.Coco
 						gen.WriteLine("}");
 						break;
 					case Node.alt:
+						Indent(indent);
+						gen.WriteLine("if (t == null) break;");
 						Indent(indent++);
 						gen.Write("if (");
 						GenCond(tab.First(node.sub));
