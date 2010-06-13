@@ -322,9 +322,12 @@ namespace at.jku.ssw.Coco
 				// where possible, "inline" node into previous node
 				switch (node.type) {
 					case GenNodeType.Alternative:
-						if (MayInlineIntoPrevious(node.next))
+						// Inlining on alternative also allows the next token to be ConsumeToken or Alternative:
+						// this is because the "if (t == null)" check was already done as part of the alternative,
+						// so we don't need to repeat it.
+						if (node.next != null && node.next.incomingEdges == 1)
 							node.next.incomingEdges = 0;
-						if (MayInlineIntoPrevious(node.sub))
+						if (node.sub != null && node.sub.incomingEdges == 1)
 							node.sub.incomingEdges = 0;
 						break;
 					case GenNodeType.SemanticAction:
@@ -394,8 +397,10 @@ namespace at.jku.ssw.Coco
 					EmitGoToNode(node.sub);
 					break;
 				case GenNodeType.ConsumeToken:
-					Indent(indent);
-					gen.WriteLine("if (t == null) { currentState = " + node.id + "; break; }");
+					if (node.incomingEdges != 0) {
+						Indent(indent);
+						gen.WriteLine("if (t == null) { currentState = " + node.id + "; break; }");
+					}
 					if (node.symbol != null) {
 						Indent(indent);
 						gen.WriteLine("Expect({0}, t); // {1}", node.symbol.n, node.symbol.name);
@@ -408,8 +413,10 @@ namespace at.jku.ssw.Coco
 					EmitGoToNode(node.next);
 					break;
 				case GenNodeType.Alternative:
-					Indent(indent);
-					gen.WriteLine("if (t == null) { currentState = " + node.id + "; break; }");
+					if (node.incomingEdges != 0) {
+						Indent(indent);
+						gen.WriteLine("if (t == null) { currentState = " + node.id + "; break; }");
+					}
 					Indent(indent++);
 					gen.Write("if (");
 					GenCond(node.matchSet);
