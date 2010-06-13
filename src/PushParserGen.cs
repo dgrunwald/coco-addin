@@ -253,7 +253,57 @@ namespace at.jku.ssw.Coco
 		
 		void SimplifySingleTokenAlternatives()
 		{
-			
+			// If the "sub" portion of an alternative expects a single token on all paths and those paths then converge
+			// to a single following node, and if there are no semantic actions on that path, then we can simplify and
+			// replace all those paths with a single "ANY" node (this works because the parent alternative ensures the first token will match).
+			List<GenNode> allGenNodes = new List<GenNode>();
+			TraverseStatusGraph(statusGraphEntryPoint, allGenNodes.Add);
+			foreach (GenNode node in allGenNodes) {
+				node.visited = false;
+			}
+			foreach (GenNode node in allGenNodes.ToArray()) {
+				if (node.type == GenNodeType.Alternative) {
+					GenNode followingNode;
+					if (IsSingleConsumeTokenFollowedBy(node.sub, out followingNode)) {
+						node.sub = new GenNode();
+						node.sub.type = GenNodeType.ConsumeToken;
+						node.sub.next = followingNode;
+						allGenNodes.Add(node.sub);
+					}
+					foreach (GenNode n in allGenNodes) {
+						n.visited = false;
+					}
+				}
+			}
+		}
+		
+		bool IsSingleConsumeTokenFollowedBy(GenNode node, out GenNode followingNode)
+		{
+			if (node == null || node.visited) {
+				followingNode = null;
+				return false;
+			}
+			node.visited = true;
+			switch (node.type) {
+				case PushParserGen.GenNodeType.CallNonterminal:
+					followingNode = node.next;
+					GenNode productionEndNode;
+					return IsSingleConsumeTokenFollowedBy(node.sub, out productionEndNode) && productionEndNode == null;
+				case PushParserGen.GenNodeType.Alternative:
+					GenNode node2;
+					return IsSingleConsumeTokenFollowedBy(node.next, out followingNode)
+						&& IsSingleConsumeTokenFollowedBy(node.sub, out node2)
+						&& followingNode == node2;
+				case PushParserGen.GenNodeType.GoToNext:
+					return IsSingleConsumeTokenFollowedBy(node, out followingNode);
+				case PushParserGen.GenNodeType.ConsumeToken:
+				case PushParserGen.GenNodeType.Error:
+					followingNode = node.next;
+					return true;
+				default:
+					followingNode = null;
+					return false;
+			}
 		}
 		
 		void CountIncomingEdgesAndAssignIDs()
