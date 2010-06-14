@@ -163,6 +163,7 @@ namespace at.jku.ssw.Coco
 			RemoveEpsilonNodes();
 			SimplifySingleTokenAlternatives();
 			MergeIdenticalNodes();
+			CombineAlternativesThatGoToSameNode();
 		}
 		
 		void RemoveEpsilonNodes()
@@ -303,6 +304,19 @@ namespace at.jku.ssw.Coco
 				default:
 					followingNode = null;
 					return false;
+			}
+		}
+		
+		void CombineAlternativesThatGoToSameNode()
+		{
+			List<GenNode> allGenNodes = new List<GenNode>();
+			TraverseStatusGraph(statusGraphEntryPoint, allGenNodes.Add);
+			foreach (GenNode node in allGenNodes) {
+				node.visited = false;
+				while (node.type == GenNodeType.Alternative && node.next != null && node.next.type == GenNodeType.Alternative && node.sub == node.next.sub) {
+					node.matchSet.Or(node.next.matchSet);
+					node.next = node.next.next;
+				}
 			}
 		}
 		
