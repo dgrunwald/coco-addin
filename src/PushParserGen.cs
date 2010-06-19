@@ -61,19 +61,28 @@ namespace at.jku.ssw.Coco
 		enum GenNodeType
 		{
 			/// <summary>
-			/// puts returnAddress on stack and goes to next
+			/// Puts next on stack and goes to target nonterminal.
 			/// </summary>
 			CallNonterminal,
 			/// <summary>
-			/// Consumes a token (symbol)
+			/// Consumes a token (symbol).
 			/// </summary>
 			ConsumeToken,
 			/// <summary>
-			/// Unconditionally go to next without doing anything
+			/// Unconditionally go to next without doing anything.
 			/// </summary>
 			GoToNext,
+			/// <summary>
+			/// Executes a piece of code.
+			/// </summary>
 			SemanticAction,
+			/// <summary>
+			/// Choose one of two alternatives.
+			/// </summary>
 			Alternative,
+			/// <summary>
+			/// Parse error was detected.
+			/// </summary>
 			Error
 		}
 		
@@ -160,10 +169,26 @@ namespace at.jku.ssw.Coco
 		
 		void OptimizeStatusGraph()
 		{
+			OptimizeTailCalls();
 			RemoveEpsilonNodes();
 			SimplifySingleTokenAlternatives();
 			MergeIdenticalNodes();
 			CombineAlternativesThatGoToSameNode();
+		}
+		
+		void OptimizeTailCalls()
+		{
+			List<GenNode> allGenNodes = new List<GenNode>();
+			TraverseStatusGraph(statusGraphEntryPoint, allGenNodes.Add);
+			// convert tail calls to epsilon nodes
+			foreach (GenNode node in allGenNodes) {
+				node.visited = false;
+				if (node.type == GenNodeType.CallNonterminal && node.next == null) {
+					node.next = node.sub;
+					node.sub = null;
+					node.type = GenNodeType.GoToNext;
+				}
+			}
 		}
 		
 		void RemoveEpsilonNodes()
@@ -314,7 +339,7 @@ namespace at.jku.ssw.Coco
 			foreach (GenNode node in allGenNodes) {
 				node.visited = false;
 				while (node.type == GenNodeType.Alternative && node.next != null && node.next.type == GenNodeType.Alternative && node.sub == node.next.sub) {
-					node.matchSet.Or(node.next.matchSet);
+					node.matchSet = new BitArray(node.matchSet).Or(node.next.matchSet);
 					node.next = node.next.next;
 				}
 			}
