@@ -46,7 +46,7 @@ namespace at.jku.ssw.Coco
 			CopyFramePart("-->constants");
 			CopyFramePart("-->declarations"); CopySourcePart(semDeclPos, 0);
 			
-			GenerateStatusGraph(); OptimizeStatusGraph(); CountIncomingEdgesAndAssignIDs();
+			GenerateStatusGraph(); OptimizeStatusGraph(); InsertSemanticActionsBeforeAlternatives(); CountIncomingEdgesAndAssignIDs();
 			gen.WriteLine("int currentState = " + statusGraphEntryPoint.id + ";");
 			CopyFramePart("-->informToken"); GenerateInformToken();
 			CopyFramePart("-->initialization"); InitSets();
@@ -83,7 +83,11 @@ namespace at.jku.ssw.Coco
 			/// <summary>
 			/// Parse error was detected.
 			/// </summary>
-			Error
+			Error,
+			/// <summary>
+			/// A piece of code that is executed on every alternative that has this PossibleSemanticAction in the first set.
+			/// </summary>
+			PossibleSemanticAction
 		}
 		
 		sealed class GenNode
@@ -97,15 +101,39 @@ namespace at.jku.ssw.Coco
 			public GenNode sub; // target if alternative matches; or target to call (CallNonterminal)
 			public bool visited;
 			public Position pos;
+			
+			public GenNode() {}
+			public GenNode(GenNode input) {
+				this.id = input.id;
+				this.incomingEdges = input.incomingEdges;
+				this.type = input.type;
+				this.next = input.next;
+				this.symbol = input.symbol;
+				this.matchSet = input.matchSet;
+				this.sub = input.sub;
+				this.pos = input.pos;
+			}
 		}
 		
-		Dictionary<Node, GenNode> nodeToGenNode = new Dictionary<Node, GenNode>();
 		GenNode statusGraphEntryPoint;
 		
 		void GenerateStatusGraph()
 		{
+			Dictionary<Node, GenNode> nodeToGenNode = new Dictionary<Node, GenNode>();
 			foreach (Node node in tab.nodes) {
 				nodeToGenNode.Add(node, new GenNode());
+			}
+			Dictionary<Symbol, GenNode> nonTerminalToGenNode = new Dictionary<Symbol, GenNode>();
+			foreach (Symbol sym in tab.nonterminals) {
+				if (sym.semPos == null) {
+					nonTerminalToGenNode.Add(sym, nodeToGenNode[sym.graph]);
+				} else {
+					GenNode possibleSem = new GenNode();
+					possibleSem.type = GenNodeType.PossibleSemanticAction;
+					possibleSem.next = nodeToGenNode[sym.graph];
+					possibleSem.pos = sym.semPos;
+					nonTerminalToGenNode.Add(sym, possibleSem);
+				}
 			}
 			statusGraphEntryPoint = nodeToGenNode[tab.gramSy.graph];
 			foreach (Node node in tab.nodes) {
@@ -114,7 +142,7 @@ namespace at.jku.ssw.Coco
 					case Node.nt: // call nonterminal
 						genNode.type = GenNodeType.CallNonterminal;
 						genNode.next = node.next != null ? nodeToGenNode[node.next] : null; // null if tail call
-						genNode.sub = nodeToGenNode[node.sym.graph];
+						genNode.sub = nonTerminalToGenNode[node.sym];
 						break;
 					case Node.any:
 					case Node.t: // terminal
@@ -345,10 +373,70 @@ namespace at.jku.ssw.Coco
 			}
 		}
 		
+		void InsertSemanticActionsBeforeAlternatives()
+		{
+			CountIncomingEdgesAndAssignIDs(); // calculate incomingEdges
+			List<GenNode> allGenNodes = new List<GenNode>();
+			TraverseStatusGraph(statusGraphEntryPoint, allGenNodes.Add);
+			List<GenNode> alternativeNodes = new List<GenNode>();
+			foreach (GenNode node in allGenNodes) {
+				node.visited = false;
+				if (node.type == GenNodeType.Alternative && node.incomingEdges > 0) {
+					alternativeNodes.Add(node);
+				}
+			}
+			foreach (GenNode alt in alternativeNodes) {
+				List<GenNode> psemList = new List<GenNode>();
+				FindReachablePossibleSemanticActions(alt, delegate(GenNode n) { if (!psemList.Contains(n)) psemList.Add(n); });
+				foreach (GenNode node in allGenNodes) {
+					node.visited = false;
+				}
+				foreach (GenNode psem in psemList) {
+					alt.next = new GenNode(alt);
+					allGenNodes.Add(alt.next);
+					alt.type = GenNodeType.SemanticAction;
+					alt.pos = psem.pos;
+					alt.sub = null; alt.matchSet = null;
+				}
+			}
+		}
+		
+		void FindReachablePossibleSemanticActions(GenNode node, Action<GenNode> action)
+		{
+			if (node == null || node.visited) return;
+			node.visited = true;
+			switch (node.type) {
+				case PushParserGen.GenNodeType.CallNonterminal:
+					FindReachablePossibleSemanticActions(node.sub, action);
+					break;
+				case PushParserGen.GenNodeType.GoToNext:
+				case PushParserGen.GenNodeType.SemanticAction:
+					FindReachablePossibleSemanticActions(node.next, action);
+					break;
+				case PushParserGen.GenNodeType.Alternative:
+					FindReachablePossibleSemanticActions(node.next, action);
+					FindReachablePossibleSemanticActions(node.sub, action);
+					break;
+				case PushParserGen.GenNodeType.ConsumeToken:
+				case PushParserGen.GenNodeType.Error:
+					// stop where token is required
+					break;
+				case PushParserGen.GenNodeType.PossibleSemanticAction:
+					action(node);
+					FindReachablePossibleSemanticActions(node.next, action);
+					break;
+				default:
+					throw new NotSupportedException();
+			}
+		}
+		
 		void CountIncomingEdgesAndAssignIDs()
 		{
 			List<GenNode> allGenNodes = new List<GenNode>();
 			TraverseStatusGraph(statusGraphEntryPoint, allGenNodes.Add);
+			foreach (GenNode node in allGenNodes) {
+				node.incomingEdges = 0;
+			}
 			foreach (GenNode node in allGenNodes) {
 				node.visited = false;
 				if (node.next != null)
@@ -369,11 +457,16 @@ namespace at.jku.ssw.Coco
 						if (node.sub != null && node.sub.incomingEdges == 1)
 							node.sub.incomingEdges = 0;
 						break;
+					case GenNodeType.PossibleSemanticAction:
 					case GenNodeType.SemanticAction:
 					case GenNodeType.GoToNext:
 					case GenNodeType.Error:
 						if (MayInlineIntoPrevious(node.next))
 							node.next.incomingEdges = 0;
+						break;
+					case GenNodeType.CallNonterminal:
+						if (MayInlineIntoPrevious(node.sub))
+							node.sub.incomingEdges = 0;
 						break;
 				}
 			}
@@ -472,6 +565,7 @@ namespace at.jku.ssw.Coco
 					gen.WriteLine("Error(t);");
 					EmitGoToNode(node.next);
 					break;
+				case GenNodeType.PossibleSemanticAction:
 				case GenNodeType.SemanticAction:
 					CopySourcePart(node.pos, indent);
 					EmitGoToNode(node.next);
