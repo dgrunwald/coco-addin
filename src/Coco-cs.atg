@@ -313,9 +313,9 @@ Expression<out Graph g>         (. Graph g2; .)
 
 Term<out Graph g>               (. Graph g2; Node rslv = null; g = null; .)
 =
-( [                             (. rslv = tab.NewNode(Node.rslv, null, la.line); .)
+( [                             (. rslv = tab.NewNode(Node.rslv, null, la.line, la.col); .)
     Resolver<out rslv.pos>      (. g = new Graph(rslv); .)
-  |                             (. rslv = tab.NewNode(Node.expectedConflict, null, la.line); .)
+  |                             (. rslv = tab.NewNode(Node.expectedConflict, null, la.line, la.col); .)
     ExpectedConflict<out rslv.pos, out rslv.conflictSymbols> (. g = new Graph(rslv); .)
   ]
   Factor<out g2>                (. if (rslv != null) tab.MakeSequence(g, g2);
@@ -323,9 +323,9 @@ Term<out Graph g>               (. Graph g2; Node rslv = null; g = null; .)
                                  .)
   { Factor<out g2>              (. tab.MakeSequence(g, g2); .)
   }
-|                               (. g = new Graph(tab.NewNode(Node.eps, null, 0)); .)
+|                               (. g = new Graph(tab.NewNode(Node.eps)); .)
 )                               (. if (g == null) // invalid start of Term
-                                     g = new Graph(tab.NewNode(Node.eps, null, 0));
+                                     g = new Graph(tab.NewNode(Node.eps));
                                  .)
 .
 
@@ -360,7 +360,7 @@ Factor<out Graph g>             (. string name; int kind; Position pos; bool wea
                                      else SemErr("only terminals may be weak");
                                    if (greedy && typ != Node.nt)
                                    	SemErr("only nonterminals may be greedy");
-                                   Node p = tab.NewNode(typ, sym, t.line);
+                                   Node p = tab.NewNode(typ, sym, t.line, t.col);
                                    p.greedy = greedy;
                                    g = new Graph(p);
                                  .)
@@ -377,18 +377,18 @@ Factor<out Graph g>             (. string name; int kind; Position pos; bool wea
 | '{'                            (. int line = t.line; int col = t.col; .)
   Expression<out g>              (. tab.MakeIteration(g, line, col); .)
   '}'
-| SemText<out pos>              (. Node p = tab.NewNode(Node.sem, null, 0);
+| SemText<out pos>              (. Node p = tab.NewNode(Node.sem);
                                    p.pos = pos;
                                    g = new Graph(p);
                                  .)
-| "ANY"                         (. Node p = tab.NewNode(Node.any, null, 0);  // p.set is set in tab.SetupAnys
+| "ANY"                         (. Node p = tab.NewNode(Node.any, null, t.line, t.col);  // p.set is set in tab.SetupAnys
                                    g = new Graph(p);
                                  .)
-| "SYNC"                        (. Node p = tab.NewNode(Node.sync, null, 0);
+| "SYNC"                        (. Node p = tab.NewNode(Node.sync, null, t.line, t.col);
                                    g = new Graph(p);
                                  .)
 )                               (. if (g == null) // invalid start of Factor
-                                     g = new Graph(tab.NewNode(Node.eps, null, 0));
+                                     g = new Graph(tab.NewNode(Node.eps));
                                  .)
 .
 
@@ -473,7 +473,7 @@ TokenFactor<out Graph g>        (. string name; int kind; g = null; .)
                                        SemErr("undefined name");
                                        c = tab.NewCharClass(name, new CharSet());
                                      }
-                                     Node p = tab.NewNode(Node.clas, null, 0); p.val = c.n;
+                                     Node p = tab.NewNode(Node.clas); p.val = c.n;
                                      g = new Graph(p);
                                      tokenString = noString;
                                    } else { // str
@@ -486,7 +486,7 @@ TokenFactor<out Graph g>        (. string name; int kind; g = null; .)
 | '[' TokenExpr<out g> ']'      (. tab.MakeOption(g, t.line, 0); tokenString = noString; .)
 | '{' TokenExpr<out g> '}'      (. tab.MakeIteration(g, t.line, 0); tokenString = noString; .)
 )                               (. if (g == null) // invalid start of TokenFactor
-                                     g = new Graph(tab.NewNode(Node.eps, null, 0)); .)
+                                     g = new Graph(tab.NewNode(Node.eps)); .)
 .
 
 /*------------------------------------------------------------------------------------*/

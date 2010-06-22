@@ -135,8 +135,8 @@ public class Node
 	public bool greedy;      //!< nt: greedy nonterminal call (don't consider call for follow set)
 	public List<Symbol> conflictSymbols; //!< expectedConflict: terminal symbols
 
-	public Node(int typ, Symbol sym, int line) {
-		this.typ = typ; this.sym = sym; this.line = line;
+	public Node(int typ, Symbol sym, int line, int col) {
+		this.typ = typ; this.sym = sym; this.line = line; this.col = col;
 	}
 }
 
@@ -259,7 +259,7 @@ public class Tab
 		errors = parser.errors;
 		buffer = parser.scanner.buffer;
 		eofSy = NewSym(Node.t, "EOF", 0);
-		dummyNode = NewNode(Node.eps, null, 0);
+		dummyNode = NewNode(Node.eps);
 		ignored  = new CharSet();
 		literals = new Hashtable();
 	}
@@ -354,21 +354,25 @@ public class Tab
 		 "sync", "sem ", "alt ", "iter", "opt ", "rslv"};
 	Node dummyNode;
 
-	public Node NewNode(int typ, Symbol sym, int line) {
-		Node node = new Node(typ, sym, line);
+	public Node NewNode(int typ, Symbol sym, int line, int col) {
+		Node node = new Node(typ, sym, line, col);
 		node.n = nodes.Count;
 		nodes.Add(node);
 		return node;
 	}
 
+	public Node NewNode(int typ) {
+		return NewNode(typ, null, 0, 0);
+	}
+
 	public Node NewNode(int typ, Node sub) {
-		Node node = NewNode(typ, null, 0);
+		Node node = NewNode(typ, null, 0, 0);
 		node.sub = sub;
 		return node;
 	}
 
-	public Node NewNode(int typ, int val, int line) {
-		Node node = NewNode(typ, null, line);
+	public Node NewNode(int typ, int val, int line, int col) {
+		Node node = NewNode(typ, null, line, col);
 		node.val = val;
 		return node;
 	}
@@ -436,7 +440,7 @@ public class Tab
 
 	public void DeleteNodes() {
 		nodes = new ArrayList();
-		dummyNode = NewNode(Node.eps, null, 0);
+		dummyNode = NewNode(Node.eps);
 	}
 
 	public Graph StrToGraph(string str) {
@@ -445,7 +449,7 @@ public class Tab
 		Graph g = new Graph();
 		g.r = dummyNode;
 		for (int i = 0; i < s.Length; i++) {
-			Node p = NewNode(Node.chr, (int)s[i], 0);
+			Node p = NewNode(Node.chr, (int)s[i], 0, 0);
 			g.r.next = p; g.r = p;
 		}
 		g.l = dummyNode.next; dummyNode.next = null;

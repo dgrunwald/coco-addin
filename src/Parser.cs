@@ -500,11 +500,11 @@ const int isIdent   = 0;
 		if (StartOf(19)) {
 			if (la.kind == 41 || la.kind == 42) {
 				if (la.kind == 41) {
-					rslv = tab.NewNode(Node.rslv, null, la.line);
+					rslv = tab.NewNode(Node.rslv, null, la.line, la.col);
 					Resolver(out rslv.pos);
 					g = new Graph(rslv);
 				} else {
-					rslv = tab.NewNode(Node.expectedConflict, null, la.line);
+					rslv = tab.NewNode(Node.expectedConflict, null, la.line, la.col);
 					ExpectedConflict(out rslv.pos, out rslv.conflictSymbols);
 					g = new Graph(rslv);
 				}
@@ -518,10 +518,10 @@ const int isIdent   = 0;
 				tab.MakeSequence(g, g2);
 			}
 		} else if (StartOf(21)) {
-			g = new Graph(tab.NewNode(Node.eps, null, 0));
+			g = new Graph(tab.NewNode(Node.eps));
 		} else SynErr(55);
 		if (g == null) // invalid start of Term
-		 g = new Graph(tab.NewNode(Node.eps, null, 0));
+		 g = new Graph(tab.NewNode(Node.eps));
 
 	}
 
@@ -587,7 +587,7 @@ const int isIdent   = 0;
 			  else SemErr("only terminals may be weak");
 			if (greedy && typ != Node.nt)
 				SemErr("only nonterminals may be greedy");
-			Node p = tab.NewNode(typ, sym, t.line);
+			Node p = tab.NewNode(typ, sym, t.line, t.col);
 			p.greedy = greedy;
 			g = new Graph(p);
 
@@ -626,7 +626,7 @@ const int isIdent   = 0;
 		}
 		case 45: {
 			SemText(out pos);
-			Node p = tab.NewNode(Node.sem, null, 0);
+			Node p = tab.NewNode(Node.sem);
 			p.pos = pos;
 			g = new Graph(p);
 
@@ -634,14 +634,14 @@ const int isIdent   = 0;
 		}
 		case 26: {
 			Get();
-			Node p = tab.NewNode(Node.any, null, 0);  // p.set is set in tab.SetupAnys
+			Node p = tab.NewNode(Node.any, null, t.line, t.col);  // p.set is set in tab.SetupAnys
 			g = new Graph(p);
 
 			break;
 		}
 		case 40: {
 			Get();
-			Node p = tab.NewNode(Node.sync, null, 0);
+			Node p = tab.NewNode(Node.sync, null, t.line, t.col);
 			g = new Graph(p);
 
 			break;
@@ -649,7 +649,7 @@ const int isIdent   = 0;
 		default: SynErr(56); break;
 		}
 		if (g == null) // invalid start of Factor
-		 g = new Graph(tab.NewNode(Node.eps, null, 0));
+		 g = new Graph(tab.NewNode(Node.eps));
 
 	}
 
@@ -743,7 +743,7 @@ const int isIdent   = 0;
 			   SemErr("undefined name");
 			   c = tab.NewCharClass(name, new CharSet());
 			 }
-			 Node p = tab.NewNode(Node.clas, null, 0); p.val = c.n;
+			 Node p = tab.NewNode(Node.clas); p.val = c.n;
 			 g = new Graph(p);
 			 tokenString = noString;
 			} else { // str
@@ -768,7 +768,7 @@ const int isIdent   = 0;
 			tab.MakeIteration(g, t.line, 0); tokenString = noString;
 		} else SynErr(58);
 		if (g == null) // invalid start of TokenFactor
-		 g = new Graph(tab.NewNode(Node.eps, null, 0));
+		 g = new Graph(tab.NewNode(Node.eps));
 	}
 
 
