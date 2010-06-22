@@ -1033,15 +1033,18 @@ public class Tab
 		BitArray s1, s2;
 		while (p != null) {
 			if (p.typ == Node.alt) {
-				Node q = p;
+				List<Node> alts = new List<Node>();
+				for (Node q = p; q != null; q = q.down)
+					alts.Add(q);
+				alts.Reverse(); // check alternatives backwards so that conflicts are
+				// detected at first alternative
 				s1 = new BitArray(terminals.Count);
-				while (q != null) { // for all alternatives
+				foreach (Node q in alts) {
 					s2 = Expected0(q.sub, curSy);
 					if (q.sub.typ != Node.expectedConflict)
 						CheckOverlap(s1, s2, 1, q);
 					s1.Or(s2);
 					CheckAlts(q.sub);
-					q = q.down;
 				}
 			} else if (p.typ == Node.opt || p.typ == Node.iter) {
 				if (DelSubGraph(p.sub)) LL1Error(4, null, p); // e.g. [[...]]
@@ -1094,8 +1097,8 @@ public class Tab
 							if (q.sub.typ == Node.expectedConflict) {
 								BitArray remaining = Expected(q.down, curSy);
 								BitArray conflict = new BitArray(fs).And(remaining);
-								if (!Sets.Equals(conflict, MakeSetForTerminals(p.sub.conflictSymbols)))
-									ResErr(p.sub, "Warning: Expected conflict does not match real conflict");
+								if (!Sets.Equals(conflict, MakeSetForTerminals(q.sub.conflictSymbols)))
+									ResErr(q.sub, "Warning: Expected conflict does not match real conflict");
 							}
 							soFar.Or(fs);
 						}
