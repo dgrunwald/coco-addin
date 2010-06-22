@@ -128,6 +128,8 @@ public class Node
 	public Node     next;    //!< to successor node
 	public Node     down;    //!< alt: to next alternative
 	public Node     sub;     //!< alt, iter, opt: to first node of substructure
+	
+	public bool greedy;      //!< nt: greedy nonterminal call (don't consider call for follow set)
 
 	public Node(int typ, Symbol sym, int line) {
 		this.typ = typ; this.sym = sym; this.line = line;
@@ -648,10 +650,12 @@ public class Tab
 		while (p != null && !visited[p.n]) {
 			visited[p.n] = true;
 			if (p.typ == Node.nt) {
-				BitArray s = First(p.next);
-				p.sym.follow.Or(s);
-				if (DelGraph(p.next))
-					p.sym.nts[curSy.n] = true;
+				if (!p.greedy) {
+					BitArray s = First(p.next);
+					p.sym.follow.Or(s);
+					if (DelGraph(p.next))
+						p.sym.nts[curSy.n] = true;
+				}
 			} else if (p.typ == Node.opt || p.typ == Node.iter) {
 				CompFollow(p.sub);
 			} else if (p.typ == Node.alt) {

@@ -48,9 +48,9 @@ public partial class Parser
 	public const int _string = 3;
 	public const int _badString = 4;
 	public const int _char = 5;
-	public const int maxT = 44;  //<! max term (w/o pragmas)
-	public const int _ddtSym = 45;
-	public const int _directive = 46;
+	public const int maxT = 45;  //<! max term (w/o pragmas)
+	public const int _ddtSym = 46;
+	public const int _directive = 47;
 
 	const bool T = true;
 	const bool x = false;
@@ -98,10 +98,10 @@ const int isIdent   = 0;
 			t = la;
 			la = scanner.Scan();
 			if (la.kind <= maxT) { ++errDist; break; }
-				if (la.kind == 45) {
+				if (la.kind == 46) {
 				tab.SetDDT(la.val);
 				}
-				if (la.kind == 46) {
+				if (la.kind == 47) {
 				tab.DispatchDirective(la.val);
 				}
 
@@ -166,7 +166,7 @@ const int isIdent   = 0;
 		} else if (la.kind == 9) {
 			Get();
 			genScanner = false; Position preamblePos = pgen.preamblePos; pgen = new PushParserGen(this); pgen.preamblePos = preamblePos;
-		} else SynErr(45);
+		} else SynErr(46);
 		Expect(1);
 		grammarName = t.val;
 		if (StartOf(4)) {
@@ -217,7 +217,7 @@ const int isIdent   = 0;
 			Set(out s);
 			tab.ignored.Or(s);
 		}
-		while (!(la.kind == 0 || la.kind == 19)) {SynErr(46); Get();}
+		while (!(la.kind == 0 || la.kind == 19)) {SynErr(47); Get();}
 		Expect(19);
 		if (genScanner) dfa.MakeDeterministic();
 		tab.DeleteNodes();
@@ -243,7 +243,7 @@ const int isIdent   = 0;
 			if (!undef && noAttrs != (sym.attrPos == null))
 			 SemErr("attribute mismatch between declaration and use of this symbol");
 
-			if (la.kind == 42) {
+			if (la.kind == 43) {
 				SemText(out sym.semPos);
 			}
 			ExpectWeak(20, 5);
@@ -319,7 +319,7 @@ const int isIdent   = 0;
 		}
 		tokenString = null;
 
-		while (!(StartOf(7))) {SynErr(47); Get();}
+		while (!(StartOf(7))) {SynErr(48); Get();}
 		if (la.kind == 20) {
 			Get();
 			TokenExpr(out g);
@@ -339,8 +339,8 @@ const int isIdent   = 0;
 			if (kind == isIdent) genScanner = false;
 			else dfa.MatchLiteral(sym.name, sym);
 
-		} else SynErr(48);
-		if (la.kind == 42) {
+		} else SynErr(49);
+		if (la.kind == 43) {
 			SemText(out sym.semPos);
 			if (typ != Node.pr) SemErr("semantic action not allowed here");
 		}
@@ -403,11 +403,11 @@ const int isIdent   = 0;
 			Expect(30);
 			if (t.pos > beg)
 			 sym.attrPos = new Position(beg, t.pos, col);
-		} else SynErr(49);
+		} else SynErr(50);
 	}
 
 	void SemText(out Position pos) {
-		Expect(42);
+		Expect(43);
 		int beg = la.pos; int col = la.col;
 		while (StartOf(15)) {
 			if (StartOf(16)) {
@@ -420,7 +420,7 @@ const int isIdent   = 0;
 				SemErr("missing end of previous semantic action");
 			}
 		}
-		Expect(43);
+		Expect(44);
 		pos = new Position(beg, t.pos, col);
 	}
 
@@ -461,7 +461,7 @@ const int isIdent   = 0;
 		} else if (la.kind == 26) {
 			Get();
 			s = new CharSet(); s.Fill();
-		} else SynErr(50);
+		} else SynErr(51);
 	}
 
 	void Char(out int n) {
@@ -491,13 +491,13 @@ const int isIdent   = 0;
 			if (dfa.ignoreCase) name = name.ToLower();
 			if (name.IndexOf(' ') >= 0)
 			  SemErr("literal tokens must not contain blanks");
-		} else SynErr(51);
+		} else SynErr(52);
 	}
 
 	void Term(out Graph g) {
 		Graph g2; Node rslv = null; g = null;
 		if (StartOf(19)) {
-			if (la.kind == 40) {
+			if (la.kind == 41) {
 				rslv = tab.NewNode(Node.rslv, null, la.line);
 				Resolver(out rslv.pos);
 				g = new Graph(rslv);
@@ -512,29 +512,33 @@ const int isIdent   = 0;
 			}
 		} else if (StartOf(21)) {
 			g = new Graph(tab.NewNode(Node.eps, null, 0));
-		} else SynErr(52);
+		} else SynErr(53);
 		if (g == null) // invalid start of Term
 		 g = new Graph(tab.NewNode(Node.eps, null, 0));
 
 	}
 
 	void Resolver(out Position pos) {
-		Expect(40);
-		Expect(33);
+		Expect(41);
+		Expect(34);
 		int beg = la.pos; int col = la.col;
 		Condition();
 		pos = new Position(beg, t.pos, col);
 	}
 
 	void Factor(out Graph g) {
-		string name; int kind; Position pos; bool weak = false;
+		string name; int kind; Position pos; bool weak = false; bool greedy = false;
 		g = null;
 
 		switch (la.kind) {
-		case 1: case 3: case 5: case 32: {
+		case 1: case 3: case 5: case 32: case 33: {
 			if (la.kind == 32) {
 				Get();
 				weak = true;
+			}
+			if (la.kind == 33) {
+				Get();
+				greedy = true;
 			}
 			Sym(out name, out kind);
 			Symbol sym = tab.FindSym(name);
@@ -558,7 +562,10 @@ const int isIdent   = 0;
 			if (weak)
 			  if (typ == Node.t) typ = Node.wt;
 			  else SemErr("only terminals may be weak");
+			if (greedy && typ != Node.nt)
+				SemErr("only nonterminals may be greedy");
 			Node p = tab.NewNode(typ, sym, t.line);
+			p.greedy = greedy;
 			g = new Graph(p);
 
 			if (la.kind == 27 || la.kind == 29) {
@@ -572,27 +579,27 @@ const int isIdent   = 0;
 
 			break;
 		}
-		case 33: {
+		case 34: {
 			Get();
 			Expression(out g);
-			Expect(34);
+			Expect(35);
 			break;
 		}
-		case 35: {
+		case 36: {
 			Get();
 			Expression(out g);
-			Expect(36);
+			Expect(37);
 			tab.MakeOption(g);
 			break;
 		}
-		case 37: {
+		case 38: {
 			Get();
 			Expression(out g);
-			Expect(38);
+			Expect(39);
 			tab.MakeIteration(g);
 			break;
 		}
-		case 42: {
+		case 43: {
 			SemText(out pos);
 			Node p = tab.NewNode(Node.sem, null, 0);
 			p.pos = pos;
@@ -607,14 +614,14 @@ const int isIdent   = 0;
 
 			break;
 		}
-		case 39: {
+		case 40: {
 			Get();
 			Node p = tab.NewNode(Node.sync, null, 0);
 			g = new Graph(p);
 
 			break;
 		}
-		default: SynErr(53); break;
+		default: SynErr(54); break;
 		}
 		if (g == null) // invalid start of Factor
 		 g = new Graph(tab.NewNode(Node.eps, null, 0));
@@ -648,19 +655,19 @@ const int isIdent   = 0;
 			}
 			Expect(30);
 			if (t.pos > beg) p.pos = new Position(beg, t.pos, col);
-		} else SynErr(54);
+		} else SynErr(55);
 	}
 
 	void Condition() {
 		while (StartOf(22)) {
-			if (la.kind == 33) {
+			if (la.kind == 34) {
 				Get();
 				Condition();
 			} else {
 				Get();
 			}
 		}
-		Expect(34);
+		Expect(35);
 	}
 
 	void TokenTerm(out Graph g) {
@@ -670,14 +677,14 @@ const int isIdent   = 0;
 			TokenFactor(out g2);
 			tab.MakeSequence(g, g2);
 		}
-		if (la.kind == 41) {
+		if (la.kind == 42) {
 			Get();
-			Expect(33);
+			Expect(34);
 			TokenExpr(out g2);
 			tab.SetContextTrans(g2.l);
 			dfa.hasCtxMoves = true;
 			tab.MakeSequence(g, g2);
-			Expect(34);
+			Expect(35);
 		}
 	}
 
@@ -700,21 +707,21 @@ const int isIdent   = 0;
 			  else tokenString = noString;
 			}
 
-		} else if (la.kind == 33) {
+		} else if (la.kind == 34) {
 			Get();
 			TokenExpr(out g);
-			Expect(34);
-		} else if (la.kind == 35) {
+			Expect(35);
+		} else if (la.kind == 36) {
 			Get();
 			TokenExpr(out g);
-			Expect(36);
+			Expect(37);
 			tab.MakeOption(g); tokenString = noString;
-		} else if (la.kind == 37) {
+		} else if (la.kind == 38) {
 			Get();
 			TokenExpr(out g);
-			Expect(38);
+			Expect(39);
 			tab.MakeIteration(g); tokenString = noString;
-		} else SynErr(55);
+		} else SynErr(56);
 		if (g == null) // invalid start of TokenFactor
 		 g = new Graph(tab.NewNode(Node.eps, null, 0));
 	}
@@ -731,29 +738,29 @@ const int isIdent   = 0;
 	}
 
 	static readonly bool[,] set = {
-		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x},
-		{x,T,T,T, T,T,T,x, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,x},
-		{x,T,T,T, T,T,x,T, x,x,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,x},
-		{x,T,T,T, T,T,T,T, x,x,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,x},
-		{x,T,T,T, T,T,T,T, T,T,x,x, x,x,x,T, T,T,x,x, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,x},
-		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,T,x,x, x,x,T,x, x,x,x,T, T,T,x,T, x,T,x,T, T,x,T,x, x,x},
-		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x},
-		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,T, x,T,x,x, x,x,x,x, x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, T,T,T,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,T,x, T,x,T,x, x,x,x,x, x,x},
-		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,x},
-		{x,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,x},
-		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x,T, T,T,T,T, T,T,T,T, T,T,T,T, T,x},
-		{x,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x,T, T,T,T,T, T,T,T,T, T,T,T,T, T,x},
-		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,x, T,x},
-		{x,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x,x, T,x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,T,x, x,x,x,T, T,T,T,T, T,T,T,T, T,x,T,x, x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,x,T,x, T,x,T,x, x,x,x,x, x,x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, T,T,x,T, x,T,x,T, T,x,T,x, x,x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, T,T,x,T, x,T,x,T, x,x,T,x, x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,T, x,x,T,x, T,x,T,x, x,x,x,x, x,x},
-		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x,T, T,T,T,T, T,T,T,T, T,x}
+		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x},
+		{x,T,T,T, T,T,T,x, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x},
+		{x,T,T,T, T,T,x,T, x,x,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x},
+		{x,T,T,T, T,T,T,T, x,x,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x},
+		{x,T,T,T, T,T,T,T, T,T,x,x, x,x,x,T, T,T,x,x, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x},
+		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,T,x,x, x,x,T,x, x,x,x,T, T,T,T,x, T,x,T,x, T,T,x,T, x,x,x},
+		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x},
+		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x},
+		{x,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,x,x},
+		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, T,x,T,x, x,x,x,x, x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, T,T,T,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,x,T, x,x,x,x, x,x,x},
+		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x},
+		{x,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x},
+		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x},
+		{x,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x},
+		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x,T,x},
+		{x,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,x, x,T,x},
+		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,T,x, x,x,x,T, T,T,T,T, T,T,T,T, T,T,x,T, x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,x,T, x,x,x,x, x,x,x},
+		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, T,T,T,x, T,x,T,x, T,T,x,T, x,x,x},
+		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, T,T,T,x, T,x,T,x, T,x,x,T, x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,T, x,x,x,T, x,T,x,T, x,x,x,x, x,x,x},
+		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,x, T,T,T,T, T,T,T,T, T,T,x}
 
 	};
 } // end Parser
@@ -804,29 +811,30 @@ public class Errors
 			case 30: return "\".>\" expected";
 			case 31: return "\"|\" expected";
 			case 32: return "\"WEAK\" expected";
-			case 33: return "\"(\" expected";
-			case 34: return "\")\" expected";
-			case 35: return "\"[\" expected";
-			case 36: return "\"]\" expected";
-			case 37: return "\"{\" expected";
-			case 38: return "\"}\" expected";
-			case 39: return "\"SYNC\" expected";
-			case 40: return "\"IF\" expected";
-			case 41: return "\"CONTEXT\" expected";
-			case 42: return "\"(.\" expected";
-			case 43: return "\".)\" expected";
-			case 44: return "??? expected";
-			case 45: return "invalid Coco";
-			case 46: return "this symbol not expected in Coco";
-			case 47: return "this symbol not expected in TokenDecl";
-			case 48: return "invalid TokenDecl";
-			case 49: return "invalid AttrDecl";
-			case 50: return "invalid SimSet";
-			case 51: return "invalid Sym";
-			case 52: return "invalid Term";
-			case 53: return "invalid Factor";
-			case 54: return "invalid Attribs";
-			case 55: return "invalid TokenFactor";
+			case 33: return "\"GREEDY\" expected";
+			case 34: return "\"(\" expected";
+			case 35: return "\")\" expected";
+			case 36: return "\"[\" expected";
+			case 37: return "\"]\" expected";
+			case 38: return "\"{\" expected";
+			case 39: return "\"}\" expected";
+			case 40: return "\"SYNC\" expected";
+			case 41: return "\"IF\" expected";
+			case 42: return "\"CONTEXT\" expected";
+			case 43: return "\"(.\" expected";
+			case 44: return "\".)\" expected";
+			case 45: return "??? expected";
+			case 46: return "invalid Coco";
+			case 47: return "this symbol not expected in Coco";
+			case 48: return "this symbol not expected in TokenDecl";
+			case 49: return "invalid TokenDecl";
+			case 50: return "invalid AttrDecl";
+			case 51: return "invalid SimSet";
+			case 52: return "invalid Sym";
+			case 53: return "invalid Term";
+			case 54: return "invalid Factor";
+			case 55: return "invalid Attribs";
+			case 56: return "invalid TokenFactor";
 
 			default: return "error " + n;
 		}

@@ -328,12 +328,12 @@ Term<out Graph g>               (. Graph g2; Node rslv = null; g = null; .)
 
 /*------------------------------------------------------------------------------------*/
 
-Factor<out Graph g>             (. string name; int kind; Position pos; bool weak = false;
+Factor<out Graph g>             (. string name; int kind; Position pos; bool weak = false; bool greedy = false;
                                    g = null;
                                  .)
 =
-( [ "WEAK"                      (. weak = true; .)
-  ]
+( [ "WEAK"                      (. weak = true; .) ]
+  [ "GREEDY"                    (. greedy = true; .) ]
   Sym<out name, out kind>       (. Symbol sym = tab.FindSym(name);
                                    if (sym == null && kind == isLiteral)
                                      sym = tab.literals[name] as Symbol;
@@ -355,7 +355,10 @@ Factor<out Graph g>             (. string name; int kind; Position pos; bool wea
                                    if (weak)
                                      if (typ == Node.t) typ = Node.wt;
                                      else SemErr("only terminals may be weak");
+                                   if (greedy && typ != Node.nt)
+                                   	SemErr("only nonterminals may be greedy");
                                    Node p = tab.NewNode(typ, sym, t.line);
+                                   p.greedy = greedy;
                                    g = new Graph(p);
                                  .)
   [ Attribs<p>                  (. if (kind == isLiteral) SemErr("a literal must not have attributes"); .)
