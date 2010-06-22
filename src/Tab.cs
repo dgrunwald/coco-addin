@@ -30,6 +30,7 @@ License
     Coco/R itself) does not fall under the GNU General Public License.
 \*---------------------------------------------------------------------------*/
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Collections;
@@ -105,6 +106,7 @@ public class Node
 	public const int iter = 12;  //!< iteration: { }
 	public const int opt  = 13;  //!< option: [ ]
 	public const int rslv = 14;  //!< resolver expr
+	public const int expectedConflict = 15;
 
 	public const int normalTrans  = 0;  //!< transition codes
 	public const int contextTrans = 1;
@@ -116,6 +118,7 @@ public class Node
 	                         //!< clas: index of character class
 	public int      code;    //!< chr, clas: transition code
 	public int      line;    //!< source text line number of item in this node
+	public int      col;     //!< source text column number of item in this node
 
 	public BitArray set;     //!< any, sync: the set represented by this node
 	public Position pos;     //!< nt, t, wt: pos of actual attributes
@@ -130,6 +133,7 @@ public class Node
 	public Node     sub;     //!< alt, iter, opt: to first node of substructure
 	
 	public bool greedy;      //!< nt: greedy nonterminal call (don't consider call for follow set)
+	public List<Symbol> conflictSymbols; //!< expectedConflict: terminal symbols
 
 	public Node(int typ, Symbol sym, int line) {
 		this.typ = typ; this.sym = sym; this.line = line;
@@ -370,7 +374,8 @@ public class Tab
 	}
 
 	public void MakeFirstAlt(Graph g) {
-		g.l = NewNode(Node.alt, g.l); g.l.line = g.l.sub.line;
+		g.l = NewNode(Node.alt, g.l);
+		g.l.line = g.l.sub.line; g.l.col = g.l.sub.col;
 		g.r.up = true;
 		g.l.next = g.r;
 		g.r = g.l;
@@ -378,7 +383,8 @@ public class Tab
 
 	// The result will be in g1
 	public void MakeAlternative(Graph g1, Graph g2) {
-		g2.l = NewNode(Node.alt, g2.l); g2.l.line = g2.l.sub.line;
+		g2.l = NewNode(Node.alt, g2.l); 
+		g2.l.line = g2.l.sub.line; g2.l.col = g2.l.sub.col;
 		g2.l.up = true;
 		g2.r.up = true;
 		Node p = g1.l; while (p.down != null) p = p.down;
@@ -400,8 +406,9 @@ public class Tab
 		g1.r = g2.r;
 	}
 
-	public void MakeIteration(Graph g) {
+	public void MakeIteration(Graph g, int line, int col) {
 		g.l = NewNode(Node.iter, g.l);
+		g.l.line = line; g.l.col = col;
 		g.r.up = true;
 		Node p = g.r;
 		g.r = g.l;
@@ -411,8 +418,9 @@ public class Tab
 		}
 	}
 
-	public void MakeOption(Graph g) {
+	public void MakeOption(Graph g, int line, int col) {
 		g.l = NewNode(Node.opt, g.l);
+		g.l.line = line; g.l.col = col;
 		g.r.up = true;
 		g.l.next = g.r;
 		g.r = g.l;
@@ -478,7 +486,7 @@ public class Tab
 		if (p.typ == Node.nt) return p.sym.deletable;
 		else if (p.typ == Node.alt) return DelSubGraph(p.sub) || p.down != null && DelSubGraph(p.down);
 		else return p.typ == Node.iter || p.typ == Node.opt || p.typ == Node.sem
-			|| p.typ == Node.eps || p.typ == Node.rslv || p.typ == Node.sync;
+			|| p.typ == Node.eps || p.typ == Node.rslv || p.typ == Node.expectedConflict || p.typ == Node.sync;
 	}
 
 	//----------------- graph printing ----------------------
@@ -996,7 +1004,7 @@ public class Tab
 
 	//--------------- check for LL(1) errors ----------------------
 
-	void LL1Error(int cond, Symbol sym) {
+	void LL1Error(int cond, Symbol sym, Node pos) {
 		string s = "  LL1 warning in " + curSy.name + ": ";
 		if (sym != null) s += sym.name + " is ";
 		switch (cond) {
@@ -1005,12 +1013,15 @@ public class Tab
 			case 3: s += "an ANY node that matches no symbol"; break;
 			case 4: s += "contents of [...] or {...} must not be deletable"; break;
 		}
-		errors.Warning(s);
+		if (pos != null)
+			errors.Warning(pos.line, pos.col, s);
+		else
+			errors.Warning(s);
 	}
 
-	void CheckOverlap(BitArray s1, BitArray s2, int cond) {
+	void CheckOverlap(BitArray s1, BitArray s2, int cond, Node pos) {
 		foreach (Symbol sym in terminals) {
-			if (s1[sym.n] && s2[sym.n]) LL1Error(cond, sym);
+			if (s1[sym.n] && s2[sym.n]) LL1Error(cond, sym, pos);
 		}
 	}
 
@@ -1022,21 +1033,22 @@ public class Tab
 				s1 = new BitArray(terminals.Count);
 				while (q != null) { // for all alternatives
 					s2 = Expected0(q.sub, curSy);
-					CheckOverlap(s1, s2, 1);
+					if (q.sub.typ != Node.expectedConflict)
+						CheckOverlap(s1, s2, 1, q);
 					s1.Or(s2);
 					CheckAlts(q.sub);
 					q = q.down;
 				}
 			} else if (p.typ == Node.opt || p.typ == Node.iter) {
-				if (DelSubGraph(p.sub)) LL1Error(4, null); // e.g. [[...]]
-				else {
+				if (DelSubGraph(p.sub)) LL1Error(4, null, p); // e.g. [[...]]
+				else if (p.sub.typ != Node.expectedConflict) {
 					s1 = Expected0(p.sub, curSy);
 					s2 = Expected(p.next, curSy);
-					CheckOverlap(s1, s2, 2);
+					CheckOverlap(s1, s2, 2, p);
 				}
 				CheckAlts(p.sub);
 			} else if (p.typ == Node.any) {
-				if (Sets.Elements(p.set) == 0) LL1Error(3, null);
+				if (Sets.Elements(p.set) == 0) LL1Error(3, null, p);
 				// e.g. {ANY} ANY or [ANY] ANY or ( ANY | ANY )
 			}
 			if (p.up) break;
@@ -1067,13 +1079,22 @@ public class Tab
 					BitArray soFar = new BitArray(terminals.Count);
 					for (Node q = p; q != null; q = q.down) {
 						if (q.sub.typ == Node.rslv) {
-						  BitArray fs = Expected(q.sub.next, curSy);
+							BitArray fs = Expected(q.sub.next, curSy);
 							if (Sets.Intersect(fs, soFar))
 								ResErr(q.sub, "Warning: Resolver will never be evaluated. " +
 								"Place it at previous conflicting alternative.");
 							if (!Sets.Intersect(fs, expected))
 								ResErr(q.sub, "Warning: Misplaced resolver: no LL(1) conflict.");
-						} else soFar.Or(Expected(q.sub, curSy));
+						} else {
+							BitArray fs = Expected(q.sub, curSy);
+							if (q.sub.typ == Node.expectedConflict) {
+								BitArray remaining = Expected(q.down, curSy);
+								BitArray conflict = new BitArray(fs).And(remaining);
+								if (!Sets.Equals(conflict, MakeSetForTerminals(p.sub.conflictSymbols)))
+									ResErr(p.sub, "Warning: Expected conflict does not match real conflict");
+							}
+							soFar.Or(fs);
+						}
 						CheckRes(q.sub, true);
 					}
 					break;
@@ -1083,6 +1104,12 @@ public class Tab
 						BitArray fsNext = Expected(p.next, curSy);
 						if (!Sets.Intersect(fs, fsNext))
 							ResErr(p.sub, "Warning: Misplaced resolver: no LL(1) conflict.");
+					} else if (p.sub.typ == Node.expectedConflict) {
+						BitArray fs = First(p.sub.next);
+						BitArray fsNext = Expected(p.next, curSy);
+						BitArray conflict = new BitArray(fs).And(fsNext);
+						if (!Sets.Equals(conflict, MakeSetForTerminals(p.sub.conflictSymbols)))
+							ResErr(p.sub, "Warning: Expected conflict does not match real conflict");
 					}
 					CheckRes(p.sub, true);
 					break;
@@ -1090,13 +1117,25 @@ public class Tab
 					if (!rslvAllowed)
 						ResErr(p, "Warning: Misplaced resolver: no alternative.");
 					break;
+				case Node.expectedConflict:
+					if (!rslvAllowed)
+						ResErr(p, "Warning: Misplaced expected conflict: no alternative.");
+					break;
 			}
 			if (p.up) break;
 			p = p.next;
 			rslvAllowed = false;
 		}
 	}
-
+	
+	BitArray MakeSetForTerminals(List<Symbol> conflictSymbols)
+	{
+		BitArray arr = new BitArray(terminals.Count);
+		foreach (Symbol sym in conflictSymbols)
+			arr[sym.n] = true;
+		return arr;
+	}
+	
 	public void CheckResolvers() {
 		foreach (Symbol sym in nonterminals) {
 			curSy = sym;

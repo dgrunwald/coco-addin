@@ -151,6 +151,7 @@ namespace at.jku.ssw.Coco
 						genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
 						break;
 					case Node.eps:
+					case Node.expectedConflict:
 						genNode.type = GenNodeType.GoToNext;
 						genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
 						break;
@@ -274,14 +275,7 @@ namespace at.jku.ssw.Coco
 						return true;
 					if (x.matchSet == null || y.matchSet == null)
 						return false;
-					if (x.matchSet.Length != y.matchSet.Length)
-						return false;
-					BitArray c = new BitArray(x.matchSet);
-					c.Xor(y.matchSet);
-					foreach (bool b in c)
-						if (b)
-							return false;
-					return true;
+					return Sets.Equals(x.matchSet, y.matchSet);
 				} else {
 					return false;
 				}

@@ -36,6 +36,7 @@ License
 [/copy]
 
 using System.IO;
+using System.Collections.Generic;
 
 COMPILER Coco
 $namespace=at.jku.ssw.Coco   // grammar directive
@@ -314,6 +315,8 @@ Term<out Graph g>               (. Graph g2; Node rslv = null; g = null; .)
 =
 ( [                             (. rslv = tab.NewNode(Node.rslv, null, la.line); .)
     Resolver<out rslv.pos>      (. g = new Graph(rslv); .)
+  |                             (. rslv = tab.NewNode(Node.expectedConflict, null, la.line); .)
+    ExpectedConflict<out rslv.pos, out rslv.conflictSymbols> (. g = new Graph(rslv); .)
   ]
   Factor<out g2>                (. if (rslv != null) tab.MakeSequence(g, g2);
                                    else g = g2;
@@ -368,8 +371,12 @@ Factor<out Graph g>             (. string name; int kind; Position pos; bool wea
                                      SemErr("attribute mismatch between declaration and use of this symbol");
                                  .)
 | '(' Expression<out g> ')'
-| '[' Expression<out g> ']'     (. tab.MakeOption(g); .)
-| '{' Expression<out g> '}'     (. tab.MakeIteration(g); .)
+| '['                            (. int line = t.line; int col = t.col; .)
+   Expression<out g>             (. tab.MakeOption(g, line, col); .)
+   ']'
+| '{'                            (. int line = t.line; int col = t.col; .)
+  Expression<out g>              (. tab.MakeIteration(g, line, col); .)
+  '}'
 | SemText<out pos>              (. Node p = tab.NewNode(Node.sem, null, 0);
                                    p.pos = pos;
                                    g = new Graph(p);
@@ -391,6 +398,37 @@ Resolver<out Position pos>
 =
   "IF" "("                       (. int beg = la.pos; int col = la.col; .)
   Condition                      (. pos = new Position(beg, t.pos, col); .)
+.
+
+ExpectedConflict<. out Position pos, out List<Symbol> conflictSymbols .>
+(. Symbol sym; conflictSymbols = new List<Symbol>(); .)
+=
+  "EXPECTEDCONFLICT" "(" (. int beg = la.pos; int col = la.col; .)
+  ConflictSymbol<out sym>   (. if (sym != null) conflictSymbols.Add(sym); .)
+  { ","
+    ConflictSymbol<out sym> (. if (sym != null) conflictSymbols.Add(sym); .)
+  }
+  ")" (. pos = new Position(beg, t.pos, col); .)
+.
+
+ConflictSymbol<out Symbol sym>
+(. string name; int kind; .)
+=
+    Sym<out name, out kind>     (. sym = tab.FindSym(name);
+                                   if (sym == null && kind == isLiteral)
+                                     sym = tab.literals[name] as Symbol;
+                                   bool undef = (sym == null);
+                                   if (undef) {
+                                     if (genScanner) {
+                                       sym = tab.NewSym(Node.t, name, t.line);
+                                       dfa.MatchLiteral(sym.name, sym);
+                                     } else {  // undefined string in production
+                                       SemErr("undefined string in production");
+                                     }
+                                   }
+                                   if (sym != null && sym.typ != Node.t)
+                                     SemErr("Expected terminal");
+                                .)
 .
 
 /*------------------------------------------------------------------------------------*/
@@ -445,8 +483,8 @@ TokenFactor<out Graph g>        (. string name; int kind; g = null; .)
                                    }
                                  .)
 | '(' TokenExpr<out g> ')'
-| '[' TokenExpr<out g> ']'      (. tab.MakeOption(g); tokenString = noString; .)
-| '{' TokenExpr<out g> '}'      (. tab.MakeIteration(g); tokenString = noString; .)
+| '[' TokenExpr<out g> ']'      (. tab.MakeOption(g, t.line, 0); tokenString = noString; .)
+| '{' TokenExpr<out g> '}'      (. tab.MakeIteration(g, t.line, 0); tokenString = noString; .)
 )                               (. if (g == null) // invalid start of TokenFactor
                                      g = new Graph(tab.NewNode(Node.eps, null, 0)); .)
 .

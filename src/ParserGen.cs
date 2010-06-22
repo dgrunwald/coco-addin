@@ -159,6 +159,7 @@ public class ParserGen : AbstractParserGen
 				}
 				case Node.eps: break; // nothing
 				case Node.rslv: break; // nothing
+				case Node.expectedConflict: break; // nothing
 				case Node.sem: {
 					CopySourcePart(p.pos, indent);
 					break;
