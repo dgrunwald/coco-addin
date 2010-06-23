@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace at.jku.ssw.Coco
 {
@@ -599,8 +600,12 @@ namespace at.jku.ssw.Coco
 					break;
 				case GenNodeType.PossibleSemanticAction:
 				case GenNodeType.SemanticAction:
+					StringWriter w = new StringWriter();
+					tab.CopySourcePart(w, node.pos, 0);
+					bool isControlFlowHack = Regex.IsMatch(w.ToString(), @"(goto \w+|break|return);\s*$");
 					CopySourcePart(node.pos, indent);
-					EmitGoToNode(node.next);
+					if (!isControlFlowHack)
+						EmitGoToNode(node.next);
 					break;
 				default:
 					throw new NotSupportedException(node.type.ToString());
