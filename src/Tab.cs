@@ -1394,7 +1394,7 @@ public class Tab
 		return CopyFramePart(istr, ostr, stop, true);
 	}
 
-	public void CopySourcePart(StreamWriter dest, Position pos, int indent) {
+	public void CopySourcePart(TextWriter dest, Position pos, int indent) {
 		// Copy text described by pos from atg to dest
 		if (pos != null)
 		{

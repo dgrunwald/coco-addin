@@ -37,25 +37,27 @@ partial class Parser {
 
 -->declarations
 	readonly Stack<int> stateStack = new Stack<int>();
+	Token t;
 	
 	public Parser()
 	{
 		stateStack.Push(-1); // required so that we don't crash when leaving the root production
 	}
 
-	void Expect(int expectedKind, Token t)
+	void Expect(int expectedKind, Token la)
 	{
-		if (t.kind != expectedKind)
-			Error(t);
+		if (la.kind != expectedKind)
+			Error(la);
 	}
 	
-	void Error(Token t) 
+	void Error(Token la) 
 	{
 	}
-
-	public void InformToken(Token t) 
+	
+	public void InformToken(Token la) 
 	{
 		-->informToken
+		if (la != null) t = la;
 	}
 	
 	public void Advance()

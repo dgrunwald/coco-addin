@@ -87,7 +87,11 @@ namespace at.jku.ssw.Coco
 			/// <summary>
 			/// A piece of code that is executed on every alternative that has this PossibleSemanticAction in the first set.
 			/// </summary>
-			PossibleSemanticAction
+			PossibleSemanticAction,
+			/// <summary>
+			/// A named state.
+			/// </summary>
+			NamedState
 		}
 		
 		sealed class GenNode
@@ -128,11 +132,11 @@ namespace at.jku.ssw.Coco
 				if (sym.semPos == null) {
 					nonTerminalToGenNode.Add(sym, nodeToGenNode[sym.graph]);
 				} else {
-					GenNode possibleSem = new GenNode();
-					possibleSem.type = GenNodeType.PossibleSemanticAction;
-					possibleSem.next = nodeToGenNode[sym.graph];
-					possibleSem.pos = sym.semPos;
-					nonTerminalToGenNode.Add(sym, possibleSem);
+					GenNode sem = new GenNode();
+					sem.type = GetSemNodeType(sym.semPos);
+					sem.next = nodeToGenNode[sym.graph];
+					sem.pos = sym.semPos;
+					nonTerminalToGenNode.Add(sym, sem);
 				}
 			}
 			statusGraphEntryPoint = nodeToGenNode[tab.gramSy.graph];
@@ -156,7 +160,7 @@ namespace at.jku.ssw.Coco
 						genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
 						break;
 					case Node.sem:
-						genNode.type = GenNodeType.SemanticAction;
+						genNode.type = GetSemNodeType(node.pos);
 						genNode.pos = node.pos;
 						genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
 						break;
@@ -184,6 +188,24 @@ namespace at.jku.ssw.Coco
 						genNode.type = GenNodeType.Error;
 						break;
 				}
+			}
+		}
+		
+		GenNodeType GetSemNodeType(Position pos)
+		{
+			StringWriter w = new StringWriter();
+			tab.CopySourcePart(w, pos, 0);
+			string text = w.ToString();
+			const string possibleSemActionMarker = "OnEachPossiblePath:";
+			const string namedStateMarker = "NamedState:";
+			if (text.StartsWith(possibleSemActionMarker, StringComparison.Ordinal)) {
+				pos.beg += possibleSemActionMarker.Length;
+				return GenNodeType.PossibleSemanticAction;
+			} else if (text.StartsWith(namedStateMarker, StringComparison.Ordinal)) {
+				pos.beg += namedStateMarker.Length;
+				return GenNodeType.NamedState;
+			} else {
+				return GenNodeType.SemanticAction;
 			}
 		}
 		
@@ -405,6 +427,7 @@ namespace at.jku.ssw.Coco
 					break;
 				case PushParserGen.GenNodeType.GoToNext:
 				case PushParserGen.GenNodeType.SemanticAction:
+				case PushParserGen.GenNodeType.NamedState:
 					FindReachablePossibleSemanticActions(node.next, action);
 					break;
 				case PushParserGen.GenNodeType.Alternative:
@@ -444,22 +467,23 @@ namespace at.jku.ssw.Coco
 				switch (node.type) {
 					case GenNodeType.Alternative:
 						// Inlining on alternative also allows the next token to be ConsumeToken or Alternative:
-						// this is because the "if (t == null)" check was already done as part of the alternative,
+						// this is because the "if (la == null)" check was already done as part of the alternative,
 						// so we don't need to repeat it.
-						if (node.next != null && node.next.incomingEdges == 1)
+						if (MayInlineIntoPrevious(node.next, true))
 							node.next.incomingEdges = 0;
-						if (node.sub != null && node.sub.incomingEdges == 1)
+						if (MayInlineIntoPrevious(node.sub, true))
 							node.sub.incomingEdges = 0;
 						break;
 					case GenNodeType.PossibleSemanticAction:
 					case GenNodeType.SemanticAction:
+					case GenNodeType.NamedState:
 					case GenNodeType.GoToNext:
 					case GenNodeType.Error:
-						if (MayInlineIntoPrevious(node.next))
+						if (MayInlineIntoPrevious(node.next, false))
 							node.next.incomingEdges = 0;
 						break;
 					case GenNodeType.CallNonterminal:
-						if (MayInlineIntoPrevious(node.sub))
+						if (MayInlineIntoPrevious(node.sub, false))
 							node.sub.incomingEdges = 0;
 						break;
 				}
@@ -473,9 +497,13 @@ namespace at.jku.ssw.Coco
 			}
 		}
 		
-		bool MayInlineIntoPrevious(GenNode next)
+		bool MayInlineIntoPrevious(GenNode next, bool alreadyHasToken)
 		{
-			return next != null && next.incomingEdges == 1 && (next.type != GenNodeType.ConsumeToken && next.type != GenNodeType.Alternative);
+			if (next == null || next.incomingEdges != 1)
+				return false;
+			if (next.type == GenNodeType.NamedState)
+				return false;
+			return alreadyHasToken || (next.type != GenNodeType.ConsumeToken && next.type != GenNodeType.Alternative);
 		}
 		
 		int indent;
@@ -484,6 +512,15 @@ namespace at.jku.ssw.Coco
 		{
 			List<GenNode> allGenNodes = new List<GenNode>();
 			TraverseStatusGraph(statusGraphEntryPoint, allGenNodes.Add);
+			foreach (GenNode node in allGenNodes) {
+				node.visited = false;
+				if (node.type == GenNodeType.NamedState) {
+					gen.Write("const int ");
+					CopySourcePart(node.pos, 0);
+					gen.WriteLine(" = " + node.id + ";");
+					Indent(2);
+				}
+			}
 			gen.WriteLine("switchlbl: switch (currentState) {");
 			indent = 3;
 			foreach (GenNode node in allGenNodes) {
@@ -525,23 +562,24 @@ namespace at.jku.ssw.Coco
 				case GenNodeType.ConsumeToken:
 					if (node.incomingEdges != 0) {
 						Indent(indent);
-						gen.WriteLine("if (t == null) { currentState = " + node.id + "; break; }");
+						gen.WriteLine("if (la == null) { currentState = " + node.id + "; break; }");
 					}
 					if (node.symbol != null) {
 						Indent(indent);
-						gen.WriteLine("Expect({0}, t); // {1}", node.symbol.n, node.symbol.name);
+						gen.WriteLine("Expect({0}, la); // {1}", node.symbol.n, node.symbol.name);
 					}
 					EmitSetStateToNode(node.next);
 					Indent(indent);
 					gen.WriteLine("break;");
 					break;
 				case GenNodeType.GoToNext: // epsilon = empty
+				case GenNodeType.NamedState:
 					EmitGoToNode(node.next);
 					break;
 				case GenNodeType.Alternative:
 					if (node.incomingEdges != 0) {
 						Indent(indent);
-						gen.WriteLine("if (t == null) { currentState = " + node.id + "; break; }");
+						gen.WriteLine("if (la == null) { currentState = " + node.id + "; break; }");
 					}
 					Indent(indent++);
 					gen.Write("if (");
@@ -556,7 +594,7 @@ namespace at.jku.ssw.Coco
 					break;
 				case GenNodeType.Error:
 					Indent(indent);
-					gen.WriteLine("Error(t);");
+					gen.WriteLine("Error(la);");
 					EmitGoToNode(node.next);
 					break;
 				case GenNodeType.PossibleSemanticAction:
@@ -600,13 +638,13 @@ namespace at.jku.ssw.Coco
 			else if (n <= maxTerm)
 				foreach (Symbol sym in tab.terminals) {
 				if (s[sym.n]) {
-					gen.Write("t.kind == {0}", sym.n);
+					gen.Write("la.kind == {0}", sym.n);
 					--n;
 					if (n > 0) gen.Write(" || ");
 				}
 			}
 			else
-				gen.Write("set[{0}, t.kind]", NewCondSet(s));
+				gen.Write("set[{0}, la.kind]", NewCondSet(s));
 		}
 	}
 }
