@@ -75,6 +75,19 @@ const int isIdent   = 0;
 	string tokenString;         // used in declarations of literal tokens
 	string noString = "-none-"; // used in declarations of literal tokens
 
+Symbol ForwardDeclare(string name, int kind) {
+	if (kind == isIdent)
+	   return tab.NewSym(Node.nt, name, 0);  // forward nt
+	 else if (genScanner) {
+	   Symbol sym = tab.NewSym(Node.t, name, t.line);
+	   dfa.MatchLiteral(sym.name, sym);
+	   return sym;
+	 } else {  // undefined string in production
+	   SemErr("undefined string in production");
+	   return tab.eofSy;  // dummy
+	 }
+ }
+
 /*-------------------------------------------------------------------------*/
 
 
@@ -569,15 +582,7 @@ const int isIdent   = 0;
 			  sym = tab.literals[name] as Symbol;
 			bool undef = (sym == null);
 			if (undef) {
-			  if (kind == isIdent)
-			    sym = tab.NewSym(Node.nt, name, 0);  // forward nt
-			  else if (genScanner) {
-			    sym = tab.NewSym(Node.t, name, t.line);
-			    dfa.MatchLiteral(sym.name, sym);
-			  } else {  // undefined string in production
-			    SemErr("undefined string in production");
-			    sym = tab.eofSy;  // dummy
-			  }
+			  sym = ForwardDeclare(name, kind);
 			}
 			int typ = sym.typ;
 			if (typ != Node.t && typ != Node.nt)
@@ -703,15 +708,8 @@ const int isIdent   = 0;
 		  sym = tab.literals[name] as Symbol;
 		bool undef = (sym == null);
 		if (undef) {
-		  if (genScanner) {
-		    sym = tab.NewSym(Node.t, name, t.line);
-		    dfa.MatchLiteral(sym.name, sym);
-		  } else {  // undefined string in production
-		    SemErr("undefined string in production");
-		  }
+		  sym = ForwardDeclare(name, kind);
 		}
-		if (sym != null && sym.typ != Node.t)
-		  SemErr("Expected terminal");
 
 	}
 
