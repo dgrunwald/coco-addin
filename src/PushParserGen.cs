@@ -44,10 +44,13 @@ namespace at.jku.ssw.Coco
 				gen.WriteLine("namespace {0} {{", tab.nsName);
 				gen.WriteLine();
 			}
-			CopyFramePart("-->constants");
-			CopyFramePart("-->declarations"); CopySourcePart(semDeclPos, 0);
 			
 			GenerateStatusGraph(); OptimizeStatusGraph(); InsertSemanticActionsBeforeAlternatives(); CountIncomingEdgesAndAssignIDs();
+			CopyFramePart("-->constants"); WriteNamedStateConstants();
+			
+			CopyFramePart("-->declarations"); CopySourcePart(semDeclPos, 0);
+			
+			Indent(1);
 			gen.WriteLine("int currentState = " + statusGraphEntryPoint.id + ";");
 			CopyFramePart("-->informToken"); GenerateInformToken();
 			CopyFramePart("-->initialization"); InitSets();
@@ -57,6 +60,21 @@ namespace at.jku.ssw.Coco
 			if (tab.nsName != null && tab.nsName.Length > 0) gen.Write("}");
 			gen.Close();
 			buffer.Pos = oldPos;
+		}
+		
+		void WriteNamedStateConstants()
+		{
+			List<GenNode> allGenNodes = new List<GenNode>();
+			TraverseStatusGraph(statusGraphEntryPoint, allGenNodes.Add);
+			foreach (GenNode node in allGenNodes) {
+				node.visited = false;
+				if (node.type == GenNodeType.NamedState) {
+					Indent(1);
+					gen.Write("const int ");
+					CopySourcePart(node.pos, 0);
+					gen.WriteLine(" = " + node.id + ";");
+				}
+			}
 		}
 		
 		enum GenNodeType
@@ -513,15 +531,6 @@ namespace at.jku.ssw.Coco
 		{
 			List<GenNode> allGenNodes = new List<GenNode>();
 			TraverseStatusGraph(statusGraphEntryPoint, allGenNodes.Add);
-			foreach (GenNode node in allGenNodes) {
-				node.visited = false;
-				if (node.type == GenNodeType.NamedState) {
-					gen.Write("const int ");
-					CopySourcePart(node.pos, 0);
-					gen.WriteLine(" = " + node.id + ";");
-					Indent(2);
-				}
-			}
 			gen.WriteLine("switchlbl: switch (currentState) {");
 			indent = 3;
 			foreach (GenNode node in allGenNodes) {
