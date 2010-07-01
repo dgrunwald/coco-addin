@@ -31,6 +31,7 @@ License
 \*---------------------------------------------------------------------------*/
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Collections;
@@ -1097,7 +1098,7 @@ public class Tab
 							if (q.sub.typ == Node.expectedConflict) {
 								BitArray remaining = Expected(q.down, curSy);
 								BitArray conflict = new BitArray(fs).And(remaining);
-								if (!Sets.Equals(conflict, MakeSetForTerminals(q.sub.conflictSymbols)))
+								if (!Sets.Equals(conflict, MakeSetForConflictSymbols(q.sub.conflictSymbols)))
 									ResErr(q.sub, "Warning: Expected conflict does not match real conflict");
 							}
 							soFar.Or(fs);
@@ -1115,7 +1116,7 @@ public class Tab
 						BitArray fs = First(p.sub.next);
 						BitArray fsNext = Expected(p.next, curSy);
 						BitArray conflict = new BitArray(fs).And(fsNext);
-						if (!Sets.Equals(conflict, MakeSetForTerminals(p.sub.conflictSymbols)))
+						if (!Sets.Equals(conflict, MakeSetForConflictSymbols(p.sub.conflictSymbols)))
 							ResErr(p.sub, "Warning: Expected conflict does not match real conflict");
 					}
 					CheckRes(p.sub, true);
@@ -1135,11 +1136,17 @@ public class Tab
 		}
 	}
 	
-	BitArray MakeSetForTerminals(List<Symbol> conflictSymbols)
+	BitArray MakeSetForConflictSymbols(List<Symbol> conflictSymbols)
 	{
 		BitArray arr = new BitArray(terminals.Count);
-		foreach (Symbol sym in conflictSymbols)
-			arr[sym.n] = true;
+		foreach (Symbol sym in conflictSymbols) {
+			if (sym.typ == Node.t)
+				arr[sym.n] = true;
+			else if (sym.typ == Node.nt) {
+				Debug.Assert(sym.firstReady);
+				arr.Or(sym.first);
+			}
+		}
 		return arr;
 	}
 	
