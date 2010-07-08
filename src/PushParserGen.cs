@@ -16,6 +16,8 @@ namespace at.jku.ssw.Coco
 {
 	public class PushParserGen : AbstractParserGen
 	{
+		internal bool emitExpectedSets;
+		
 		public PushParserGen(Parser parser) : base(parser)
 		{
 		}
@@ -48,6 +50,10 @@ namespace at.jku.ssw.Coco
 			GenerateStatusGraph(); OptimizeStatusGraph(); InsertSemanticActionsBeforeAlternatives(); CountIncomingEdgesAndAssignIDs();
 			CopyFramePart("-->constants"); WriteNamedStateConstants();
 			
+			if (emitExpectedSets) {
+				EmitCodeForGetFollowSets();
+			}
+			
 			CopyFramePart("-->declarations"); CopySourcePart(semDeclPos, 0);
 			
 			Indent(1);
@@ -75,6 +81,50 @@ namespace at.jku.ssw.Coco
 					gen.WriteLine(" = " + node.id + ";");
 				}
 			}
+		}
+		
+		void EmitCodeForGetFollowSets()
+		{
+			List<GenNode> allGenNodes = new List<GenNode>();
+			TraverseStatusGraph(statusGraphEntryPoint, allGenNodes.Add);
+			Indent(1); gen.WriteLine("static BitArray GetExpectedSet(int state)");
+			Indent(1); gen.WriteLine("{");
+			Indent(2); gen.WriteLine("switch (state) {");
+			foreach (GenNode node in allGenNodes) {
+				if (!node.visited || node.id == int.MaxValue) continue;
+				foreach (GenNode node2 in allGenNodes) {
+					if (node2.id == int.MaxValue) continue;
+					if (Sets.Equals(node.expectedSet, node2.expectedSet)) {
+						Indent(3);
+						gen.WriteLine("case {0}:", node2.id);
+						node2.visited = false;
+					}
+				}
+				if (Sets.Elements(node.expectedSet) <= maxTerm) {
+					Indent(4);
+					gen.WriteLine("{");
+					Indent(5);
+					gen.WriteLine("BitArray a = new BitArray({0});", tab.terminals.Count);
+					foreach (Symbol sym in tab.terminals) {
+						if (node.expectedSet[sym.n]) {
+							Indent(5);
+							gen.WriteLine("a.Set({0}, true);", sym.n);
+						}
+					}
+					Indent(5);
+					gen.WriteLine("return a;");
+					Indent(4);
+					gen.WriteLine("}");
+				} else {
+					Indent(4);
+					gen.WriteLine("return set[{0}];", NewCondSet(node.expectedSet));
+				}
+			}
+			foreach (GenNode node in allGenNodes)
+				node.visited = false; // ensure visited got set to false everywhere (even if id==int.maxvalue)
+			Indent(3); gen.WriteLine("default: throw new InvalidOperationException();");
+			Indent(2); gen.WriteLine("}");
+			Indent(1); gen.WriteLine("}");
 		}
 		
 		enum GenNodeType
@@ -124,6 +174,7 @@ namespace at.jku.ssw.Coco
 			public GenNode sub; // target if alternative matches; or target to call (CallNonterminal)
 			public bool visited;
 			public Position pos;
+			public BitArray expectedSet; // expected set (first set on this node)
 			
 			public GenNode() {}
 			public GenNode(GenNode input) {
@@ -135,6 +186,7 @@ namespace at.jku.ssw.Coco
 				this.matchSet = input.matchSet;
 				this.sub = input.sub;
 				this.pos = input.pos;
+				this.expectedSet = input.expectedSet;
 			}
 		}
 		
@@ -155,59 +207,79 @@ namespace at.jku.ssw.Coco
 					sem.type = GetSemNodeType(sym.semPos);
 					sem.next = nodeToGenNode[sym.graph];
 					sem.pos = sym.semPos;
+					if (emitExpectedSets)
+						sem.expectedSet = tab.Expected(sym.graph, sym);
 					nonTerminalToGenNode.Add(sym, sem);
 				}
 			}
 			statusGraphEntryPoint = nodeToGenNode[tab.gramSy.graph];
-			foreach (Node node in tab.nodes) {
-				GenNode genNode = nodeToGenNode[node];
-				switch (node.typ) {
-					case Node.nt: // call nonterminal
-						genNode.type = GenNodeType.CallNonterminal;
-						genNode.next = node.next != null ? nodeToGenNode[node.next] : null; // null if tail call
-						genNode.sub = nonTerminalToGenNode[node.sym];
-						break;
-					case Node.any:
-					case Node.t: // terminal
-						genNode.type = GenNodeType.ConsumeToken;
-						genNode.symbol = (node.typ == Node.t) ? node.sym : null;
-						genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
-						break;
-					case Node.eps:
-					case Node.expectedConflict:
-						genNode.type = GenNodeType.GoToNext;
-						genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
-						break;
-					case Node.sem:
-						genNode.type = GetSemNodeType(node.pos);
-						genNode.pos = node.pos;
-						genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
-						break;
-					case Node.opt:
-					case Node.iter:
-						genNode.type = GenNodeType.Alternative;
-						genNode.matchSet = tab.First(node.sub);
-						genNode.sub = node.sub != null ? nodeToGenNode[node.sub] : null;
-						genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
-						break;
-					case Node.alt:
-						genNode.type = GenNodeType.Alternative;
-						genNode.matchSet = tab.First(node.sub);
-						genNode.sub = node.sub != null ? nodeToGenNode[node.sub] : null;
-						if (node.down != null) {
-							genNode.next = nodeToGenNode[node.down];
-						} else {
-							genNode.next = new GenNode();
-							genNode.next.type = GenNodeType.Error;
-							genNode.next.next = node.next != null ? nodeToGenNode[node.next] : null;
+			foreach (Symbol nt in tab.nonterminals) {
+				WalkGraph(
+					nt.graph, new BitArray(tab.nodes.Count), delegate (Node node) {
+						GenNode genNode = nodeToGenNode[node];
+						if (emitExpectedSets)
+							genNode.expectedSet = tab.Expected(node, nt);
+						switch (node.typ) {
+							case Node.nt: // call nonterminal
+								genNode.type = GenNodeType.CallNonterminal;
+								genNode.next = node.next != null ? nodeToGenNode[node.next] : null; // null if tail call
+								genNode.sub = nonTerminalToGenNode[node.sym];
+								break;
+							case Node.any:
+							case Node.t: // terminal
+								genNode.type = GenNodeType.ConsumeToken;
+								genNode.symbol = (node.typ == Node.t) ? node.sym : null;
+								genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
+								break;
+							case Node.eps:
+							case Node.expectedConflict:
+								genNode.type = GenNodeType.GoToNext;
+								genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
+								break;
+							case Node.sem:
+								genNode.type = GetSemNodeType(node.pos);
+								genNode.pos = node.pos;
+								genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
+								break;
+							case Node.opt:
+							case Node.iter:
+								genNode.type = GenNodeType.Alternative;
+								genNode.matchSet = tab.First(node.sub);
+								genNode.sub = node.sub != null ? nodeToGenNode[node.sub] : null;
+								genNode.next = node.next != null ? nodeToGenNode[node.next] : null;
+								break;
+							case Node.alt:
+								genNode.type = GenNodeType.Alternative;
+								genNode.matchSet = tab.First(node.sub);
+								genNode.sub = node.sub != null ? nodeToGenNode[node.sub] : null;
+								if (node.down != null) {
+									genNode.next = nodeToGenNode[node.down];
+								} else {
+									genNode.next = new GenNode();
+									if (emitExpectedSets)
+										genNode.next.expectedSet = new BitArray(tab.terminals.Count);
+									genNode.next.type = GenNodeType.Error;
+									genNode.next.next = node.next != null ? nodeToGenNode[node.next] : null;
+								}
+								break;
+							default:
+								errors.SemErr("Node type " + node.typ + " not supported in push mode");
+								genNode.type = GenNodeType.Error;
+								break;
 						}
-						break;
-					default:
-						errors.SemErr("Node type " + node.typ + " not supported in push mode");
-						genNode.type = GenNodeType.Error;
-						break;
-				}
+					});
 			}
+		}
+		
+		void WalkGraph(Node node, BitArray visited, Action<Node> func)
+		{
+			if (node == null || visited.Get(node.n))
+				return;
+			visited.Set(node.n, true);
+			func(node);
+			WalkGraph(node.next, visited, func);
+			WalkGraph(node.down, visited, func);
+			WalkGraph(node.sub, visited, func);
 		}
 		
 		GenNodeType GetSemNodeType(Position pos)
@@ -312,11 +384,7 @@ namespace at.jku.ssw.Coco
 			public bool Equals(GenNode x, GenNode y)
 			{
 				if (x.type == y.type && x.symbol == y.symbol && x.sub == y.sub && x.pos == y.pos && x.next == y.next) {
-					if (x.matchSet == y.matchSet)
-						return true;
-					if (x.matchSet == null || y.matchSet == null)
-						return false;
-					return Sets.Equals(x.matchSet, y.matchSet);
+					return Sets.Equals(x.expectedSet, y.expectedSet) && Sets.Equals(x.matchSet, y.matchSet);
 				} else {
 					return false;
 				}
@@ -354,9 +422,11 @@ namespace at.jku.ssw.Coco
 				if (node.type == GenNodeType.Alternative) {
 					GenNode followingNode;
 					if (IsSingleConsumeTokenFollowedBy(node.sub, out followingNode)) {
+						BitArray oldExpected = node.sub.expectedSet;
 						node.sub = new GenNode();
 						node.sub.type = GenNodeType.ConsumeToken;
 						node.sub.next = followingNode;
+						node.sub.expectedSet = oldExpected;
 						allGenNodes.Add(node.sub);
 					}
 					foreach (GenNode n in allGenNodes) {
@@ -658,7 +728,7 @@ namespace at.jku.ssw.Coco
 				}
 			}
 			else
-				gen.Write("set[{0}, la.kind]", NewCondSet(s));
+				gen.Write("set[{0}].Get(la.kind)", NewCondSet(s));
 		}
 	}
 }

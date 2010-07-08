@@ -26,14 +26,13 @@ Coco/R itself) does not fall under the GNU General Public License.
 ----------------------------------------------------------------------*/
 -->begin
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 -->namespace
 
 partial class Parser {
 -->constants
-	const bool T = true;
-	const bool x = false;
 
 -->declarations
 	readonly Stack<int> stateStack = new Stack<int>();
@@ -64,8 +63,8 @@ partial class Parser {
 	{
 		InformToken(null);
 	}
-	
-	static readonly bool[,] set = {
+
+	static readonly BitArray[] set = {
 -->initialization
 	};
 

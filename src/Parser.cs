@@ -33,6 +33,7 @@ using System.Collections.Generic;
 
 
 using System;
+using System.Collections;
 
 namespace at.jku.ssw.Coco {
 
@@ -49,9 +50,9 @@ public partial class Parser
 	public const int _string = 3;
 	public const int _badString = 4;
 	public const int _char = 5;
-	public const int maxT = 47;  //<! max term (w/o pragmas)
-	public const int _ddtSym = 48;
-	public const int _directive = 49;
+	public const int maxT = 49;  //<! max term (w/o pragmas)
+	public const int _ddtSym = 50;
+	public const int _directive = 51;
 
 	const bool T = true;
 	const bool x = false;
@@ -112,10 +113,10 @@ Symbol ForwardDeclare(string name, int kind) {
 			t = la;
 			la = scanner.Scan();
 			if (la.kind <= maxT) { ++errDist; break; }
-				if (la.kind == 48) {
+				if (la.kind == 50) {
 				tab.SetDDT(la.val);
 				}
-				if (la.kind == 49) {
+				if (la.kind == 51) {
 				tab.DispatchDirective(la.val);
 				}
 
@@ -128,7 +129,7 @@ Symbol ForwardDeclare(string name, int kind) {
 	}
 
 	bool StartOf (int s) {
-		return set[s, la.kind];
+		return set[s].Get(la.kind);
 	}
 
 	void ExpectWeak (int n, int follow) {
@@ -146,7 +147,7 @@ Symbol ForwardDeclare(string name, int kind) {
 		else if (StartOf(repFol)) {return false;}
 		else {
 			SynErr(n);
-			while (!(set[syFol, kind] || set[repFol, kind] || set[0, kind])) {
+			while (!(set[syFol].Get(kind) || set[repFol].Get(kind) || set[0].Get(kind))) {
 				Get();
 				kind = la.kind;
 			}
@@ -179,8 +180,15 @@ Symbol ForwardDeclare(string name, int kind) {
 			genScanner = true;
 		} else if (la.kind == 9) {
 			Get();
-			genScanner = false; Position preamblePos = pgen.preamblePos; pgen = new PushParserGen(this); pgen.preamblePos = preamblePos;
-		} else SynErr(48);
+			genScanner = false; 
+			PushParserGen pushParserGen = new PushParserGen(this);
+			pushParserGen.preamblePos = pgen.preamblePos; pgen = pushParserGen;
+			while (la.kind == 10) {
+				Get();
+				Expect(11);
+				pushParserGen.emitExpectedSets = true;
+			}
+		} else SynErr(50);
 		Expect(1);
 		grammarName = t.val;
 		if (StartOf(4)) {
@@ -191,48 +199,48 @@ Symbol ForwardDeclare(string name, int kind) {
 			}
 			pgen.semDeclPos = new Position(beg, la.pos, 0);
 		}
-		if (la.kind == 10) {
+		if (la.kind == 12) {
 			Get();
 			dfa.ignoreCase = true;
 		}
-		if (la.kind == 11) {
+		if (la.kind == 13) {
 			Get();
 			while (la.kind == 1) {
 				SetDecl();
 			}
 		}
-		if (la.kind == 12) {
+		if (la.kind == 14) {
 			Get();
 			while (la.kind == 1 || la.kind == 3 || la.kind == 5) {
 				TokenDecl(Node.t);
 			}
 		}
-		if (la.kind == 13) {
+		if (la.kind == 15) {
 			Get();
 			while (la.kind == 1 || la.kind == 3 || la.kind == 5) {
 				TokenDecl(Node.pr);
 			}
 		}
-		while (la.kind == 14) {
+		while (la.kind == 16) {
 			Get();
 			Graph g1, g2; bool nested = false;
-			Expect(15);
+			Expect(17);
 			TokenExpr(out g1);
-			Expect(16);
+			Expect(18);
 			TokenExpr(out g2);
-			if (la.kind == 17) {
+			if (la.kind == 19) {
 				Get();
 				nested = true;
 			}
 			dfa.NewComment(g1.l, g2.l, nested);
 		}
-		while (la.kind == 18) {
+		while (la.kind == 20) {
 			Get();
 			Set(out s);
 			tab.ignored.Or(s);
 		}
-		while (!(la.kind == 0 || la.kind == 19)) {SynErr(49); Get();}
-		Expect(19);
+		while (!(la.kind == 0 || la.kind == 21)) {SynErr(51); Get();}
+		Expect(21);
 		if (genScanner) dfa.MakeDeterministic();
 		tab.DeleteNodes();
 
@@ -251,23 +259,23 @@ Symbol ForwardDeclare(string name, int kind) {
 			bool noAttrs = (sym.attrPos == null);
 			sym.attrPos = null;
 
-			if (la.kind == 27 || la.kind == 29) {
+			if (la.kind == 29 || la.kind == 31) {
 				AttrDecl(sym);
 			}
 			if (!undef && noAttrs != (sym.attrPos == null))
 			 SemErr("attribute mismatch between declaration and use of this symbol");
 
-			if (la.kind == 45) {
+			if (la.kind == 47) {
 				SemText(out sym.semPos);
 			}
-			ExpectWeak(20, 5);
+			ExpectWeak(22, 5);
 			Expression(out g);
 			sym.graph = g.l;
 			tab.Finish(g);
 
-			ExpectWeak(21, 6);
+			ExpectWeak(23, 6);
 		}
-		Expect(22);
+		Expect(24);
 		Expect(1);
 		if (grammarName != t.val)
 		 SemErr("name does not match grammar name");
@@ -304,7 +312,7 @@ Symbol ForwardDeclare(string name, int kind) {
 		}
 		if (tab.ddt[6]) tab.PrintSymbolTable();
 
-		Expect(21);
+		Expect(23);
 	}
 
 	void SetDecl() {
@@ -314,12 +322,12 @@ Symbol ForwardDeclare(string name, int kind) {
 		CharClass c = tab.FindCharClass(name);
 		if (c != null) SemErr("name declared twice");
 
-		Expect(20);
+		Expect(22);
 		Set(out s);
 		if (s.Elements() == 0) SemErr("character set must not be empty");
 		tab.NewCharClass(name, s);
 
-		Expect(21);
+		Expect(23);
 	}
 
 	void TokenDecl(int typ) {
@@ -333,11 +341,11 @@ Symbol ForwardDeclare(string name, int kind) {
 		}
 		tokenString = null;
 
-		while (!(StartOf(7))) {SynErr(50); Get();}
-		if (la.kind == 20) {
+		while (!(StartOf(7))) {SynErr(52); Get();}
+		if (la.kind == 22) {
 			Get();
 			TokenExpr(out g);
-			Expect(21);
+			Expect(23);
 			if (kind == isLiteral) SemErr("a literal must not be declared with a structure");
 			tab.Finish(g);
 			if (tokenString == null || tokenString.Equals(noString))
@@ -353,8 +361,8 @@ Symbol ForwardDeclare(string name, int kind) {
 			if (kind == isIdent) genScanner = false;
 			else dfa.MatchLiteral(sym.name, sym);
 
-		} else SynErr(51);
-		if (la.kind == 45) {
+		} else SynErr(53);
+		if (la.kind == 47) {
 			SemText(out sym.semPos);
 			if (typ != Node.pr) SemErr("semantic action not allowed here");
 		}
@@ -364,7 +372,7 @@ Symbol ForwardDeclare(string name, int kind) {
 		Graph g2;
 		TokenTerm(out g);
 		bool first = true;
-		while (WeakSeparator(31,9,10) ) {
+		while (WeakSeparator(33,9,10) ) {
 			TokenTerm(out g2);
 			if (first) { tab.MakeFirstAlt(g); first = false; }
 			tab.MakeAlternative(g, g2);
@@ -375,8 +383,8 @@ Symbol ForwardDeclare(string name, int kind) {
 	void Set(out CharSet s) {
 		CharSet s2;
 		SimSet(out s);
-		while (la.kind == 23 || la.kind == 24) {
-			if (la.kind == 23) {
+		while (la.kind == 25 || la.kind == 26) {
+			if (la.kind == 25) {
 				Get();
 				SimSet(out s2);
 				s.Or(s2);
@@ -389,7 +397,7 @@ Symbol ForwardDeclare(string name, int kind) {
 	}
 
 	void AttrDecl(Symbol sym) {
-		if (la.kind == 27) {
+		if (la.kind == 29) {
 			Get();
 			int beg = la.pos; int col = la.col;
 			while (StartOf(11)) {
@@ -400,10 +408,10 @@ Symbol ForwardDeclare(string name, int kind) {
 					SemErr("bad string in attributes");
 				}
 			}
-			Expect(28);
+			Expect(30);
 			if (t.pos > beg)
 			 sym.attrPos = new Position(beg, t.pos, col);
-		} else if (la.kind == 29) {
+		} else if (la.kind == 31) {
 			Get();
 			int beg = la.pos; int col = la.col;
 			while (StartOf(13)) {
@@ -414,14 +422,14 @@ Symbol ForwardDeclare(string name, int kind) {
 					SemErr("bad string in attributes");
 				}
 			}
-			Expect(30);
+			Expect(32);
 			if (t.pos > beg)
 			 sym.attrPos = new Position(beg, t.pos, col);
-		} else SynErr(52);
+		} else SynErr(54);
 	}
 
 	void SemText(out Position pos) {
-		Expect(45);
+		Expect(47);
 		int beg = la.pos; int col = la.col;
 		while (StartOf(15)) {
 			if (StartOf(16)) {
@@ -434,7 +442,7 @@ Symbol ForwardDeclare(string name, int kind) {
 				SemErr("missing end of previous semantic action");
 			}
 		}
-		Expect(46);
+		Expect(48);
 		pos = new Position(beg, t.pos, col);
 	}
 
@@ -442,7 +450,7 @@ Symbol ForwardDeclare(string name, int kind) {
 		Graph g2;
 		Term(out g);
 		bool first = true;
-		while (WeakSeparator(31,17,18) ) {
+		while (WeakSeparator(33,17,18) ) {
 			Term(out g2);
 			if (first) { tab.MakeFirstAlt(g); first = false; }
 			tab.MakeAlternative(g, g2);
@@ -467,15 +475,15 @@ Symbol ForwardDeclare(string name, int kind) {
 		} else if (la.kind == 5) {
 			Char(out n1);
 			s.Set(n1);
-			if (la.kind == 25) {
+			if (la.kind == 27) {
 				Get();
 				Char(out n2);
 				for (int i = n1; i <= n2; i++) s.Set(i);
 			}
-		} else if (la.kind == 26) {
+		} else if (la.kind == 28) {
 			Get();
 			s = new CharSet(); s.Fill();
-		} else SynErr(53);
+		} else SynErr(55);
 	}
 
 	void Char(out int n) {
@@ -505,14 +513,14 @@ Symbol ForwardDeclare(string name, int kind) {
 			if (dfa.ignoreCase) name = name.ToLower();
 			if (name.IndexOf(' ') >= 0)
 			  SemErr("literal tokens must not contain blanks");
-		} else SynErr(54);
+		} else SynErr(56);
 	}
 
 	void Term(out Graph g) {
 		Graph g2; Node rslv = null; g = null;
 		if (StartOf(19)) {
-			if (la.kind == 41 || la.kind == 42) {
-				if (la.kind == 41) {
+			if (la.kind == 43 || la.kind == 44) {
+				if (la.kind == 43) {
 					rslv = tab.NewNode(Node.rslv, null, la.line, la.col);
 					Resolver(out rslv.pos);
 					g = new Graph(rslv);
@@ -532,15 +540,15 @@ Symbol ForwardDeclare(string name, int kind) {
 			}
 		} else if (StartOf(21)) {
 			g = new Graph(tab.NewNode(Node.eps));
-		} else SynErr(55);
+		} else SynErr(57);
 		if (g == null) // invalid start of Term
 		 g = new Graph(tab.NewNode(Node.eps));
 
 	}
 
 	void Resolver(out Position pos) {
-		Expect(41);
-		Expect(34);
+		Expect(43);
+		Expect(36);
 		int beg = la.pos; int col = la.col;
 		Condition();
 		pos = new Position(beg, t.pos, col);
@@ -548,17 +556,17 @@ Symbol ForwardDeclare(string name, int kind) {
 
 	void ExpectedConflict(out Position pos, out List<Symbol> conflictSymbols) {
 		Symbol sym; conflictSymbols = new List<Symbol>();
-		Expect(42);
-		Expect(34);
+		Expect(44);
+		Expect(36);
 		int beg = la.pos; int col = la.col;
 		ConflictSymbol(out sym);
 		if (sym != null) conflictSymbols.Add(sym);
-		while (la.kind == 43) {
+		while (la.kind == 45) {
 			Get();
 			ConflictSymbol(out sym);
 			if (sym != null) conflictSymbols.Add(sym);
 		}
-		Expect(35);
+		Expect(37);
 		pos = new Position(beg, t.pos, col);
 	}
 
@@ -567,12 +575,12 @@ Symbol ForwardDeclare(string name, int kind) {
 		g = null;
 
 		switch (la.kind) {
-		case 1: case 3: case 5: case 32: case 33: {
-			if (la.kind == 32) {
+		case 1: case 3: case 5: case 34: case 35: {
+			if (la.kind == 34) {
 				Get();
 				weak = true;
 			}
-			if (la.kind == 33) {
+			if (la.kind == 35) {
 				Get();
 				greedy = true;
 			}
@@ -596,7 +604,7 @@ Symbol ForwardDeclare(string name, int kind) {
 			p.greedy = greedy;
 			g = new Graph(p);
 
-			if (la.kind == 27 || la.kind == 29) {
+			if (la.kind == 29 || la.kind == 31) {
 				Attribs(p);
 				if (kind == isLiteral) SemErr("a literal must not have attributes");
 			}
@@ -607,17 +615,9 @@ Symbol ForwardDeclare(string name, int kind) {
 
 			break;
 		}
-		case 34: {
-			Get();
-			Expression(out g);
-			Expect(35);
-			break;
-		}
 		case 36: {
 			Get();
-			int line = t.line; int col = t.col;
 			Expression(out g);
-			tab.MakeOption(g, line, col);
 			Expect(37);
 			break;
 		}
@@ -625,11 +625,19 @@ Symbol ForwardDeclare(string name, int kind) {
 			Get();
 			int line = t.line; int col = t.col;
 			Expression(out g);
-			tab.MakeIteration(g, line, col);
+			tab.MakeOption(g, line, col);
 			Expect(39);
 			break;
 		}
-		case 45: {
+		case 40: {
+			Get();
+			int line = t.line; int col = t.col;
+			Expression(out g);
+			tab.MakeIteration(g, line, col);
+			Expect(41);
+			break;
+		}
+		case 47: {
 			SemText(out pos);
 			Node p = tab.NewNode(Node.sem);
 			p.pos = pos;
@@ -637,21 +645,21 @@ Symbol ForwardDeclare(string name, int kind) {
 
 			break;
 		}
-		case 26: {
+		case 28: {
 			Get();
 			Node p = tab.NewNode(Node.any, null, t.line, t.col);  // p.set is set in tab.SetupAnys
 			g = new Graph(p);
 
 			break;
 		}
-		case 40: {
+		case 42: {
 			Get();
 			Node p = tab.NewNode(Node.sync, null, t.line, t.col);
 			g = new Graph(p);
 
 			break;
 		}
-		default: SynErr(56); break;
+		default: SynErr(58); break;
 		}
 		if (g == null) // invalid start of Factor
 		 g = new Graph(tab.NewNode(Node.eps));
@@ -659,7 +667,7 @@ Symbol ForwardDeclare(string name, int kind) {
 	}
 
 	void Attribs(Node p) {
-		if (la.kind == 27) {
+		if (la.kind == 29) {
 			Get();
 			int beg = la.pos; int col = la.col;
 			while (StartOf(11)) {
@@ -670,9 +678,9 @@ Symbol ForwardDeclare(string name, int kind) {
 					SemErr("bad string in attributes");
 				}
 			}
-			Expect(28);
+			Expect(30);
 			if (t.pos > beg) p.pos = new Position(beg, t.pos, col);
-		} else if (la.kind == 29) {
+		} else if (la.kind == 31) {
 			Get();
 			int beg = la.pos; int col = la.col;
 			while (StartOf(13)) {
@@ -683,21 +691,21 @@ Symbol ForwardDeclare(string name, int kind) {
 					SemErr("bad string in attributes");
 				}
 			}
-			Expect(30);
+			Expect(32);
 			if (t.pos > beg) p.pos = new Position(beg, t.pos, col);
-		} else SynErr(57);
+		} else SynErr(59);
 	}
 
 	void Condition() {
 		while (StartOf(22)) {
-			if (la.kind == 34) {
+			if (la.kind == 36) {
 				Get();
 				Condition();
 			} else {
 				Get();
 			}
 		}
-		Expect(35);
+		Expect(37);
 	}
 
 	void ConflictSymbol(out Symbol sym) {
@@ -720,14 +728,14 @@ Symbol ForwardDeclare(string name, int kind) {
 			TokenFactor(out g2);
 			tab.MakeSequence(g, g2);
 		}
-		if (la.kind == 44) {
+		if (la.kind == 46) {
 			Get();
-			Expect(34);
+			Expect(36);
 			TokenExpr(out g2);
 			tab.SetContextTrans(g2.l);
 			dfa.hasCtxMoves = true;
 			tab.MakeSequence(g, g2);
-			Expect(35);
+			Expect(37);
 		}
 	}
 
@@ -750,21 +758,21 @@ Symbol ForwardDeclare(string name, int kind) {
 			  else tokenString = noString;
 			}
 
-		} else if (la.kind == 34) {
-			Get();
-			TokenExpr(out g);
-			Expect(35);
 		} else if (la.kind == 36) {
 			Get();
 			TokenExpr(out g);
 			Expect(37);
-			tab.MakeOption(g, t.line, 0); tokenString = noString;
 		} else if (la.kind == 38) {
 			Get();
 			TokenExpr(out g);
 			Expect(39);
+			tab.MakeOption(g, t.line, 0); tokenString = noString;
+		} else if (la.kind == 40) {
+			Get();
+			TokenExpr(out g);
+			Expect(41);
 			tab.MakeIteration(g, t.line, 0); tokenString = noString;
-		} else SynErr(58);
+		} else SynErr(60);
 		if (g == null) // invalid start of TokenFactor
 		 g = new Graph(tab.NewNode(Node.eps));
 	}
@@ -780,30 +788,30 @@ Symbol ForwardDeclare(string name, int kind) {
 
 	}
 
-	static readonly bool[,] set = {
-		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x},
-		{x,T,T,T, T,T,T,x, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x},
-		{x,T,T,T, T,T,x,T, x,x,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x},
-		{x,T,T,T, T,T,T,T, x,x,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x},
-		{x,T,T,T, T,T,T,T, T,T,x,x, x,x,x,T, T,T,x,x, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x},
-		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,T,x,x, x,x,T,x, x,x,x,T, T,T,T,x, T,x,T,x, T,T,T,x, x,T,x,x, x},
-		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x},
-		{T,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,T,T,x, x,x,T,T, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, T,x,T,x, x,x,x,x, x,x,x,x, x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, T,T,T,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,x,T, x,x,x,x, x,x,x,x, x},
-		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x},
-		{x,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x},
-		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x},
-		{x,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, x},
-		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,x,T, x},
-		{x,T,T,T, x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,x,x,T, x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,T,x, x,x,x,T, T,T,T,T, T,T,T,T, T,T,T,x, x,T,x,x, x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,T, x,T,x,T, x,x,x,x, x,x,x,x, x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, T,T,T,x, T,x,T,x, T,T,T,x, x,T,x,x, x},
-		{x,T,x,T, x,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,T,x, x,x,x,x, T,T,T,x, T,x,T,x, T,x,x,x, x,T,x,x, x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x, x,x,x,T, x,x,x,T, x,T,x,T, x,x,x,x, x,x,x,x, x},
-		{x,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,T, T,T,T,x, T,T,T,T, T,T,T,T, T,T,T,T, x}
+	static readonly BitArray[] set = {
+		new BitArray(new int[] {7438379, 32768}),
+		new BitArray(new int[] {-130, -1}),
+		new BitArray(new int[] {-834, -1}),
+		new BitArray(new int[] {-770, -1}),
+		new BitArray(new int[] {-3272706, -1}),
+		new BitArray(new int[] {284262443, 40286}),
+		new BitArray(new int[] {24215595, 32768}),
+		new BitArray(new int[] {7438379, 32768}),
+		new BitArray(new int[] {3244074, 32768}),
+		new BitArray(new int[] {42, 336}),
+		new BitArray(new int[] {12386304, 672}),
+		new BitArray(new int[] {-1073741826, -1}),
+		new BitArray(new int[] {-1073741842, -1}),
+		new BitArray(new int[] {-2, -2}),
+		new BitArray(new int[] {-18, -2}),
+		new BitArray(new int[] {-2, -65537}),
+		new BitArray(new int[] {-18, -98305}),
+		new BitArray(new int[] {276824106, 40958}),
+		new BitArray(new int[] {8388608, 672}),
+		new BitArray(new int[] {268435498, 40284}),
+		new BitArray(new int[] {268435498, 34140}),
+		new BitArray(new int[] {8388608, 674}),
+		new BitArray(new int[] {-2, -33})
 
 	};
 } // end Parser
@@ -831,55 +839,57 @@ public class Errors
 			case 7: return "\"[/copy]\" expected";
 			case 8: return "\"COMPILER\" expected";
 			case 9: return "\"PUSHCOMPILER\" expected";
-			case 10: return "\"IGNORECASE\" expected";
-			case 11: return "\"CHARACTERS\" expected";
-			case 12: return "\"TOKENS\" expected";
-			case 13: return "\"PRAGMAS\" expected";
-			case 14: return "\"COMMENTS\" expected";
-			case 15: return "\"FROM\" expected";
-			case 16: return "\"TO\" expected";
-			case 17: return "\"NESTED\" expected";
-			case 18: return "\"IGNORE\" expected";
-			case 19: return "\"PRODUCTIONS\" expected";
-			case 20: return "\"=\" expected";
-			case 21: return "\".\" expected";
-			case 22: return "\"END\" expected";
-			case 23: return "\"+\" expected";
-			case 24: return "\"-\" expected";
-			case 25: return "\"..\" expected";
-			case 26: return "\"ANY\" expected";
-			case 27: return "\"<\" expected";
-			case 28: return "\">\" expected";
-			case 29: return "\"<.\" expected";
-			case 30: return "\".>\" expected";
-			case 31: return "\"|\" expected";
-			case 32: return "\"WEAK\" expected";
-			case 33: return "\"GREEDY\" expected";
-			case 34: return "\"(\" expected";
-			case 35: return "\")\" expected";
-			case 36: return "\"[\" expected";
-			case 37: return "\"]\" expected";
-			case 38: return "\"{\" expected";
-			case 39: return "\"}\" expected";
-			case 40: return "\"SYNC\" expected";
-			case 41: return "\"IF\" expected";
-			case 42: return "\"EXPECTEDCONFLICT\" expected";
-			case 43: return "\",\" expected";
-			case 44: return "\"CONTEXT\" expected";
-			case 45: return "\"(.\" expected";
-			case 46: return "\".)\" expected";
-			case 47: return "??? expected";
-			case 48: return "invalid Coco";
-			case 49: return "this symbol not expected in Coco";
-			case 50: return "this symbol not expected in TokenDecl";
-			case 51: return "invalid TokenDecl";
-			case 52: return "invalid AttrDecl";
-			case 53: return "invalid SimSet";
-			case 54: return "invalid Sym";
-			case 55: return "invalid Term";
-			case 56: return "invalid Factor";
-			case 57: return "invalid Attribs";
-			case 58: return "invalid TokenFactor";
+			case 10: return "\"WITH\" expected";
+			case 11: return "\"EXPECTEDSETS\" expected";
+			case 12: return "\"IGNORECASE\" expected";
+			case 13: return "\"CHARACTERS\" expected";
+			case 14: return "\"TOKENS\" expected";
+			case 15: return "\"PRAGMAS\" expected";
+			case 16: return "\"COMMENTS\" expected";
+			case 17: return "\"FROM\" expected";
+			case 18: return "\"TO\" expected";
+			case 19: return "\"NESTED\" expected";
+			case 20: return "\"IGNORE\" expected";
+			case 21: return "\"PRODUCTIONS\" expected";
+			case 22: return "\"=\" expected";
+			case 23: return "\".\" expected";
+			case 24: return "\"END\" expected";
+			case 25: return "\"+\" expected";
+			case 26: return "\"-\" expected";
+			case 27: return "\"..\" expected";
+			case 28: return "\"ANY\" expected";
+			case 29: return "\"<\" expected";
+			case 30: return "\">\" expected";
+			case 31: return "\"<.\" expected";
+			case 32: return "\".>\" expected";
+			case 33: return "\"|\" expected";
+			case 34: return "\"WEAK\" expected";
+			case 35: return "\"GREEDY\" expected";
+			case 36: return "\"(\" expected";
+			case 37: return "\")\" expected";
+			case 38: return "\"[\" expected";
+			case 39: return "\"]\" expected";
+			case 40: return "\"{\" expected";
+			case 41: return "\"}\" expected";
+			case 42: return "\"SYNC\" expected";
+			case 43: return "\"IF\" expected";
+			case 44: return "\"EXPECTEDCONFLICT\" expected";
+			case 45: return "\",\" expected";
+			case 46: return "\"CONTEXT\" expected";
+			case 47: return "\"(.\" expected";
+			case 48: return "\".)\" expected";
+			case 49: return "??? expected";
+			case 50: return "invalid Coco";
+			case 51: return "this symbol not expected in Coco";
+			case 52: return "this symbol not expected in TokenDecl";
+			case 53: return "invalid TokenDecl";
+			case 54: return "invalid AttrDecl";
+			case 55: return "invalid SimSet";
+			case 56: return "invalid Sym";
+			case 57: return "invalid Term";
+			case 58: return "invalid Factor";
+			case 59: return "invalid Attribs";
+			case 60: return "invalid TokenFactor";
 
 			default: return "error " + n;
 		}

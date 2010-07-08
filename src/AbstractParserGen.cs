@@ -27,7 +27,7 @@ public abstract class AbstractParserGen
 	
 	const char CR  = '\r';
 	const char LF  = '\n';
-	protected const int maxTerm = 3;		// sets of size < maxTerm are enumerated
+	protected const int maxTerm = 3;		// sets of size <= maxTerm are enumerated
 	
 	protected AbstractParserGen(Parser parser)
 	{
@@ -51,14 +51,16 @@ public abstract class AbstractParserGen
 	protected void InitSets() {
 		for (int i = 0; i < symSet.Count; i++) {
 			BitArray s = (BitArray)symSet[i];
-			gen.Write("\t\t{");
-			int j = 0;
-			foreach (Symbol sym in tab.terminals) {
-				if (s[sym.n]) gen.Write("T,"); else gen.Write("x,");
-				++j;
-				if (j % 4 == 0) gen.Write(" ");
+			int[] bitValues = new int[(s.Length + 31) / 32];
+			s.CopyTo(bitValues, 0);
+			gen.Write("\t\tnew BitArray(new int[] {");
+			for (int j = 0; j < bitValues.Length; j++) {
+				if (j > 0)
+					gen.Write(", ");
+				//gen.Write("0x" + bitValues[j].ToString("x8"));
+				gen.Write(bitValues[j].ToString());
 			}
-			if (i == symSet.Count-1) gen.WriteLine("x}"); else gen.WriteLine("x},");
+			if (i == symSet.Count-1) gen.WriteLine("})"); else gen.WriteLine("}),");
 		}
 	}
 	

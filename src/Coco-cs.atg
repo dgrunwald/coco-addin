@@ -116,7 +116,12 @@ Coco                            (. Symbol sym; Graph g; string grammarName; Char
 
   (
     "COMPILER"      (. genScanner = true; .)
-  | "PUSHCOMPILER"  (. genScanner = false; Position preamblePos = pgen.preamblePos; pgen = new PushParserGen(this); pgen.preamblePos = preamblePos; .)
+  | "PUSHCOMPILER"  (. genScanner = false; 
+                       PushParserGen pushParserGen = new PushParserGen(this);
+                       pushParserGen.preamblePos = pgen.preamblePos; pgen = pushParserGen; .)
+    { "WITH"
+      ( "EXPECTEDSETS" (. pushParserGen.emitExpectedSets = true; .) )
+    }
   )
   ident                         (. grammarName = t.val; .)
 

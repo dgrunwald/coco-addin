@@ -41,6 +41,7 @@ About this file
 \*---------------------------------------------------------------------------*/
 -->begin
 using System;
+using System.Collections;
 
 -->namespace
 
@@ -94,7 +95,7 @@ public partial class Parser
 	}
 
 	bool StartOf (int s) {
-		return set[s, la.kind];
+		return set[s].Get(la.kind);
 	}
 
 	void ExpectWeak (int n, int follow) {
@@ -112,7 +113,7 @@ public partial class Parser
 		else if (StartOf(repFol)) {return false;}
 		else {
 			SynErr(n);
-			while (!(set[syFol, kind] || set[repFol, kind] || set[0, kind])) {
+			while (!(set[syFol].Get(kind) || set[repFol].Get(kind) || set[0].Get(kind))) {
 				Get();
 				kind = la.kind;
 			}
@@ -130,7 +131,7 @@ public partial class Parser
 -->parseRoot
 	}
 
-	static readonly bool[,] set = {
+	static readonly BitArray[] set = {
 -->initialization
 	};
 } // end Parser

@@ -180,6 +180,10 @@ public class Sets
 	}
 
 	public static bool Equals(BitArray a, BitArray b) {
+		if (a == b)
+			return true;
+		if (a == null || b == null)
+			return false;
 		int max = a.Count;
 		for (int i=0; i<max; i++)
 			if (a[i] != b[i]) return false;
