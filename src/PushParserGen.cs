@@ -65,6 +65,7 @@ namespace at.jku.ssw.Coco
 			/* AW 2002-12-20 close namespace, if it exists */
 			if (tab.nsName != null && tab.nsName.Length > 0) gen.Write("}");
 			gen.Close();
+			fram.Close();
 			buffer.Pos = oldPos;
 		}
 		

@@ -329,6 +329,7 @@ public class ParserGen : AbstractParserGen
 		/* AW 2002-12-20 close namespace, if it exists */
 		if (tab.nsName != null && tab.nsName.Length > 0) gen.WriteLine("} // end namespace");
 		gen.Close();
+		fram.Close();
 		tab.buffer.Pos = oldPos;
 	}
 
