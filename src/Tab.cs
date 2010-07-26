@@ -248,6 +248,7 @@ public class Tab
 	public string nsName = null;      //!< namespace for generated files
 	public string prefixName = null;  //!< prefix for generated files
 	public string frameDir;           //!< directory containing the frame files
+	public string tokenKindFieldName = "kind"; //!< field name used for kind in code generation
 	public string outDir;             //!< directory for generated files
 
 	BitArray visited;                 //!< mark list for graph traversals
@@ -1320,6 +1321,10 @@ public class Tab
 					frameDir = value;
 					Console.WriteLine("using frame dir: '" + frameDir + "'");
 				}
+				break;
+			case "tokenKindFieldName":
+				tokenKindFieldName = value;
+				Console.WriteLine("using tokenKindFieldName: '" + tokenKindFieldName + "'");
 				break;
 			case "trace":
 				SetDDT(value);

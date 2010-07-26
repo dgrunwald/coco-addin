@@ -723,13 +723,13 @@ namespace at.jku.ssw.Coco
 			else if (n <= maxTerm)
 				foreach (Symbol sym in tab.terminals) {
 				if (s[sym.n]) {
-					gen.Write("la.kind == {0}", sym.n);
+					gen.Write("la.{1} == {0}", sym.n, tab.tokenKindFieldName);
 					--n;
 					if (n > 0) gen.Write(" || ");
 				}
 			}
 			else
-				gen.Write("set[{0}].Get(la.kind)", NewCondSet(s));
+				gen.Write("set[{0}].Get(la.{1})", NewCondSet(s), tab.tokenKindFieldName);
 		}
 	}
 }
