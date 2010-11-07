@@ -47,9 +47,10 @@ public class Position
 	public int beg;    //!< start relative to the beginning of the file
 	public int end;    //!< end of stretch
 	public int col;    //!< column number of start position
+	public int lineNumber;
 
-	public Position(int beg, int end, int col) {
-		this.beg = beg; this.end = end; this.col = col;
+	public Position(int beg, int end, int col, int lineNumber) {
+		this.beg = beg; this.end = end; this.col = col; this.lineNumber = lineNumber;
 	}
 }
 
@@ -233,6 +234,7 @@ public class Tab
 	const char LF  = '\n';
 
 	public bool explicitEOF = false;  //!< user must explicitly add EOF in grammar
+	public bool lineDirectives = false; //!< output #line directives
 	public bool makeBackup  = false;  //!< create .bak files for generated parser/scanner
 	public bool[] ddt = new bool[10]; //!< debug and test switches
 
@@ -1349,6 +1351,9 @@ public class Tab
 				switch (value) {
 					case "EXPLICIT_EOF":
 						explicitEOF = true;
+						break;
+					case "LINE_DIRECTIVES":
+						lineDirectives = true;
 						break;
 					default:
 						errors.Warning("ignoring unknown define: '" + value + "'");

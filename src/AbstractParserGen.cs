@@ -87,7 +87,16 @@ public abstract class AbstractParserGen
 	}
 	
 	protected void CopySourcePart(Position pos, int indent) {
+		if (tab.lineDirectives && pos != null && pos.lineNumber > 0) {
+			if (indent == 0) gen.WriteLine();
+			gen.WriteLine("#line " + pos.lineNumber + " " + Path.GetFileName(tab.srcName));
+		}
 		tab.CopySourcePart(gen, pos, indent);
+		if (tab.lineDirectives && pos != null && pos.lineNumber > 0) {
+			if (indent == 0) gen.WriteLine();
+			else gen.Write(new string('\t', indent));
+			gen.WriteLine("#line default");
+		}
 	}
 	
 	protected void CopyFramePart(string stop, bool doOutput) {

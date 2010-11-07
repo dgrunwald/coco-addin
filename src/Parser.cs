@@ -164,7 +164,7 @@ Symbol ForwardDeclare(string name, int kind) {
 			while (StartOf(1)) {
 				Get();
 			}
-			tab.copyPos = new Position(beg, la.pos, 0);
+			tab.copyPos = new Position(beg, la.pos, 0, la.line);
 			Expect(7);
 		}
 		if (StartOf(2)) {
@@ -173,7 +173,7 @@ Symbol ForwardDeclare(string name, int kind) {
 			while (StartOf(3)) {
 				Get();
 			}
-			pgen.preamblePos = new Position(beg, la.pos, 0);
+			pgen.preamblePos = new Position(beg, la.pos, 0, la.line);
 		}
 		if (la.kind == 8) {
 			Get();
@@ -193,11 +193,11 @@ Symbol ForwardDeclare(string name, int kind) {
 		grammarName = t.val;
 		if (StartOf(4)) {
 			Get();
-			int beg = t.pos;
+			int beg = t.pos; int line = t.line;
 			while (StartOf(4)) {
 				Get();
 			}
-			pgen.semDeclPos = new Position(beg, la.pos, 0);
+			pgen.semDeclPos = new Position(beg, la.pos, 0, line);
 		}
 		if (la.kind == 12) {
 			Get();
@@ -410,7 +410,7 @@ Symbol ForwardDeclare(string name, int kind) {
 			}
 			Expect(30);
 			if (t.pos > beg)
-			 sym.attrPos = new Position(beg, t.pos, col);
+			 sym.attrPos = new Position(beg, t.pos, col, t.line);
 		} else if (la.kind == 31) {
 			Get();
 			int beg = la.pos; int col = la.col;
@@ -424,13 +424,13 @@ Symbol ForwardDeclare(string name, int kind) {
 			}
 			Expect(32);
 			if (t.pos > beg)
-			 sym.attrPos = new Position(beg, t.pos, col);
+			 sym.attrPos = new Position(beg, t.pos, col, t.line);
 		} else SynErr(54);
 	}
 
 	void SemText(out Position pos) {
 		Expect(47);
-		int beg = la.pos; int col = la.col;
+		int beg = la.pos; int col = la.col; int line = la.line;
 		while (StartOf(15)) {
 			if (StartOf(16)) {
 				Get();
@@ -443,7 +443,7 @@ Symbol ForwardDeclare(string name, int kind) {
 			}
 		}
 		Expect(48);
-		pos = new Position(beg, t.pos, col);
+		pos = new Position(beg, t.pos, col, line);
 	}
 
 	void Expression(out Graph g) {
@@ -549,16 +549,16 @@ Symbol ForwardDeclare(string name, int kind) {
 	void Resolver(out Position pos) {
 		Expect(43);
 		Expect(36);
-		int beg = la.pos; int col = la.col;
+		int beg = la.pos; int col = la.col; int line = la.line;
 		Condition();
-		pos = new Position(beg, t.pos, col);
+		pos = new Position(beg, t.pos, col, line);
 	}
 
 	void ExpectedConflict(out Position pos, out List<Symbol> conflictSymbols) {
 		Symbol sym; conflictSymbols = new List<Symbol>();
 		Expect(44);
 		Expect(36);
-		int beg = la.pos; int col = la.col;
+		int beg = la.pos; int col = la.col; int line = la.line;
 		ConflictSymbol(out sym);
 		if (sym != null) conflictSymbols.Add(sym);
 		while (la.kind == 45) {
@@ -567,7 +567,7 @@ Symbol ForwardDeclare(string name, int kind) {
 			if (sym != null) conflictSymbols.Add(sym);
 		}
 		Expect(37);
-		pos = new Position(beg, t.pos, col);
+		pos = new Position(beg, t.pos, col, line);
 	}
 
 	void Factor(out Graph g) {
@@ -669,7 +669,7 @@ Symbol ForwardDeclare(string name, int kind) {
 	void Attribs(Node p) {
 		if (la.kind == 29) {
 			Get();
-			int beg = la.pos; int col = la.col;
+			int beg = la.pos; int col = la.col; int line = la.line;
 			while (StartOf(11)) {
 				if (StartOf(12)) {
 					Get();
@@ -679,10 +679,10 @@ Symbol ForwardDeclare(string name, int kind) {
 				}
 			}
 			Expect(30);
-			if (t.pos > beg) p.pos = new Position(beg, t.pos, col);
+			if (t.pos > beg) p.pos = new Position(beg, t.pos, col, line);
 		} else if (la.kind == 31) {
 			Get();
-			int beg = la.pos; int col = la.col;
+			int beg = la.pos; int col = la.col; int line = la.line;
 			while (StartOf(13)) {
 				if (StartOf(14)) {
 					Get();
@@ -692,7 +692,7 @@ Symbol ForwardDeclare(string name, int kind) {
 				}
 			}
 			Expect(32);
-			if (t.pos > beg) p.pos = new Position(beg, t.pos, col);
+			if (t.pos > beg) p.pos = new Position(beg, t.pos, col, line);
 		} else SynErr(59);
 	}
 

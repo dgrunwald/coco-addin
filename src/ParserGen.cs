@@ -315,41 +315,46 @@ public class ParserGen : AbstractParserGen
 			throw new FatalError("Cannot open Parser.frame.");
 		}
 
-		err = new StringWriter();
-		foreach (Symbol sym in tab.terminals) GenErrorMsg(tErr, sym);
+		try {
+			err = new StringWriter();
+			foreach (Symbol sym in tab.terminals) GenErrorMsg(tErr, sym);
 
-		OpenGen();
-		CopyFramePart("-->begin", false);
-		CopySourcePart(tab.copyPos, 0);
+			OpenGen();
+			CopyFramePart("-->begin", false);
+			CopySourcePart(tab.copyPos, 0);
 
-		if (preamblePos != null) { CopySourcePart(preamblePos, 0); gen.WriteLine(); }
-		CopyFramePart("-->namespace");
-		/* AW open namespace, if it exists */
-		if (tab.nsName != null && tab.nsName.Length > 0) {
-			gen.WriteLine("namespace {0} {{", tab.nsName);
-		}
-		CopyFramePart("-->constants");
-		GenTokens(); /* ML 2002/09/07 write the token kinds */
-		GenNamedFirstSets();
-		CopyFramePart("-->declarations"); CopySourcePart(semDeclPos, 0);
+			if (preamblePos != null) { CopySourcePart(preamblePos, 0); gen.WriteLine(); }
+			CopyFramePart("-->namespace");
+			/* AW open namespace, if it exists */
+			if (tab.nsName != null && tab.nsName.Length > 0) {
+				gen.WriteLine("namespace {0} {{", tab.nsName);
+			}
+			CopyFramePart("-->constants");
+			GenTokens(); /* ML 2002/09/07 write the token kinds */
+			GenNamedFirstSets();
+			CopyFramePart("-->declarations"); CopySourcePart(semDeclPos, 0);
 
-		CopyFramePart("-->pragmas"); GenCodePragmas();
-		CopyFramePart("-->productions"); GenProductions();
-		CopyFramePart("-->parseRoot"); gen.WriteLine("\t\t{0}();", tab.gramSy.name);
-		if (tab.explicitEOF) {
-			gen.WriteLine("\t\t// let grammar deal with end-of-file expectations");
+			CopyFramePart("-->pragmas"); GenCodePragmas();
+			CopyFramePart("-->productions"); GenProductions();
+			CopyFramePart("-->parseRoot"); gen.WriteLine("\t\t{0}();", tab.gramSy.name);
+			if (tab.explicitEOF) {
+				gen.WriteLine("\t\t// let grammar deal with end-of-file expectations");
+			}
+			else {
+				gen.WriteLine("\t\tExpect(0); // expect end-of-file automatically added");
+			}
+			CopyFramePart("-->initialization"); InitSets();
+			CopyFramePart("-->errors"); gen.Write(err.ToString());
+			CopyFramePart("$$$");
+			/* AW 2002-12-20 close namespace, if it exists */
+			if (tab.nsName != null && tab.nsName.Length > 0) gen.WriteLine("} // end namespace");
+		} finally {
+			try {
+				gen.Close();
+				fram.Close();
+				tab.buffer.Pos = oldPos;
+			} catch {}
 		}
-		else {
-			gen.WriteLine("\t\tExpect(0); // expect end-of-file automatically added");
-		}
-		CopyFramePart("-->initialization"); InitSets();
-		CopyFramePart("-->errors"); gen.Write(err.ToString());
-		CopyFramePart("$$$");
-		/* AW 2002-12-20 close namespace, if it exists */
-		if (tab.nsName != null && tab.nsName.Length > 0) gen.WriteLine("} // end namespace");
-		gen.Close();
-		fram.Close();
-		tab.buffer.Pos = oldPos;
 	}
 	
 	string GetSource(Position pos)

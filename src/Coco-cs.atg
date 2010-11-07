@@ -105,13 +105,13 @@ Coco                            (. Symbol sym; Graph g; string grammarName; Char
 =
   // copyrights, notices, comments, etc. to add to the generated files
   [ "[copy]"                    (. int beg = t.pos + t.val.Length; .)
-    { ANY }                     (. tab.copyPos = new Position(beg, la.pos, 0); .)
+    { ANY }                     (. tab.copyPos = new Position(beg, la.pos, 0, la.line); .)
     "[/copy]"
   ]
 
   [ // using statements
     ANY                         (. int beg = t.pos; .)
-    { ANY }                     (. pgen.preamblePos = new Position(beg, la.pos, 0); .)
+    { ANY }                     (. pgen.preamblePos = new Position(beg, la.pos, 0, la.line); .)
   ]
 
   (
@@ -126,8 +126,8 @@ Coco                            (. Symbol sym; Graph g; string grammarName; Char
   ident                         (. grammarName = t.val; .)
 
   // semantic declarations - ie, class members and methods
-  [ ANY                         (. int beg = t.pos; .)
-    { ANY }                     (. pgen.semDeclPos = new Position(beg, la.pos, 0); .)
+  [ ANY                         (. int beg = t.pos; int line = t.line; .)
+    { ANY }                     (. pgen.semDeclPos = new Position(beg, la.pos, 0, line); .)
   ]
 
   [ "IGNORECASE"                (. dfa.ignoreCase = true; .) ]   /* pdt */
@@ -305,13 +305,13 @@ AttrDecl<Symbol sym>
   | badString                   (. SemErr("bad string in attributes"); .)
   }
   '>'                           (. if (t.pos > beg)
-                                     sym.attrPos = new Position(beg, t.pos, col); .)
+                                     sym.attrPos = new Position(beg, t.pos, col, t.line); .)
 | "<."                          (. int beg = la.pos; int col = la.col; .)
   { ANY
   | badString                   (. SemErr("bad string in attributes"); .)
   }
   ".>"                          (. if (t.pos > beg)
-                                     sym.attrPos = new Position(beg, t.pos, col); .)
+                                     sym.attrPos = new Position(beg, t.pos, col, t.line); .)
 .
 
 /*------------------------------------------------------------------------------------*/
@@ -406,19 +406,19 @@ Factor<out Graph g>             (. string name; int kind; Position pos; bool wea
 
 Resolver<out Position pos>
 =
-  "IF" "("                       (. int beg = la.pos; int col = la.col; .)
-  Condition                      (. pos = new Position(beg, t.pos, col); .)
+  "IF" "("                       (. int beg = la.pos; int col = la.col; int line = la.line; .)
+  Condition                      (. pos = new Position(beg, t.pos, col, line); .)
 .
 
 ExpectedConflict<. out Position pos, out List<Symbol> conflictSymbols .>
 (. Symbol sym; conflictSymbols = new List<Symbol>(); .)
 =
-  "EXPECTEDCONFLICT" "(" (. int beg = la.pos; int col = la.col; .)
+  "EXPECTEDCONFLICT" "(" (. int beg = la.pos; int col = la.col; int line = la.line; .)
   ConflictSymbol<out sym>   (. if (sym != null) conflictSymbols.Add(sym); .)
   { ","
     ConflictSymbol<out sym> (. if (sym != null) conflictSymbols.Add(sym); .)
   }
-  ")" (. pos = new Position(beg, t.pos, col); .)
+  ")" (. pos = new Position(beg, t.pos, col, line); .)
 .
 
 ConflictSymbol<out Symbol sym>
@@ -510,28 +510,28 @@ Sym<out string name, out int kind>
 
 Attribs<Node p>
 =
-  '<'                           (. int beg = la.pos; int col = la.col; .)
+  '<'                           (. int beg = la.pos; int col = la.col; int line = la.line; .)
   { ANY
   | badString                   (. SemErr("bad string in attributes"); .)
   }
-  '>'                           (. if (t.pos > beg) p.pos = new Position(beg, t.pos, col); .)
-| "<."                          (. int beg = la.pos; int col = la.col; .)
+  '>'                           (. if (t.pos > beg) p.pos = new Position(beg, t.pos, col, line); .)
+| "<."                          (. int beg = la.pos; int col = la.col; int line = la.line; .)
   { ANY
   | badString                   (. SemErr("bad string in attributes"); .)
   }
-  ".>"                          (. if (t.pos > beg) p.pos = new Position(beg, t.pos, col); .)
+  ".>"                          (. if (t.pos > beg) p.pos = new Position(beg, t.pos, col, line); .)
 .
 
 /*------------------------------------------------------------------------------------*/
 
 SemText<out Position pos>
 =
-  "(."                          (. int beg = la.pos; int col = la.col; .)
+  "(."                          (. int beg = la.pos; int col = la.col; int line = la.line; .)
   { ANY
   | badString                   (. SemErr("bad string in semantic action"); .)
   | "(."                        (. SemErr("missing end of previous semantic action"); .)
   }
-  ".)"                          (. pos = new Position(beg, t.pos, col); .)
+  ".)"                          (. pos = new Position(beg, t.pos, col, line); .)
 .
 
 /*------------------------------------------------------------------------------------*/
