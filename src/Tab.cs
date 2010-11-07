@@ -135,6 +135,8 @@ public class Node
 	
 	public bool greedy;      //!< nt: greedy nonterminal call (don't consider call for follow set)
 	public List<Symbol> conflictSymbols; //!< expectedConflict: terminal symbols
+	
+	public bool resolverWasExtracted; // rslv: was extracted into parent iter/opt
 
 	public Node(int typ, Symbol sym, int line, int col) {
 		this.typ = typ; this.sym = sym; this.line = line; this.col = col;
@@ -956,7 +958,7 @@ public class Tab
 			&& AllNtReached()
 			&& NoCircularProductions()
 			&& AllNtToTerm();
-    if (ok) { CheckResolvers(); CheckLL1(); }
+    if (ok) { CheckLL1(); CheckResolvers(); } // check LL1 first because it sets 'resolverWasExtracted'
     return ok;
 	}
 
@@ -1035,7 +1037,7 @@ public class Tab
 			if (s1[sym.n] && s2[sym.n]) LL1Error(cond, sym, pos);
 		}
 	}
-
+	
 	void CheckAlts(Node p) {
 		BitArray s1, s2;
 		while (p != null) {
@@ -1056,8 +1058,21 @@ public class Tab
 			} else if (p.typ == Node.opt || p.typ == Node.iter) {
 				if (DelSubGraph(p.sub)) LL1Error(4, null, p); // e.g. [[...]]
 				else if (p.sub.typ != Node.expectedConflict) {
-					s1 = Expected0(p.sub, curSy);
 					s2 = Expected(p.next, curSy);
+					if (p.sub.typ == Node.alt) {
+						// resolver extraction is possible here
+						s1 = new BitArray(terminals.Count);
+						for (Node q = p.sub; q != null; q = q.down) {
+							if (q.sub.typ == Node.rslv) {
+								if (Sets.Intersect(s2, Expected(q.sub, curSy)))
+									q.sub.resolverWasExtracted = true;
+							} else {
+								s1.Or(Expected0(q.sub, curSy));
+							}
+						}
+					} else {
+						s1 = Expected0(p.sub, curSy);
+					}
 					CheckOverlap(s1, s2, 2, p);
 				}
 				CheckAlts(p.sub);
@@ -1097,7 +1112,7 @@ public class Tab
 							if (Sets.Intersect(fs, soFar))
 								ResErr(q.sub, "Warning: Resolver will never be evaluated. " +
 								"Place it at previous conflicting alternative.");
-							if (!Sets.Intersect(fs, expected))
+							if (!Sets.Intersect(fs, expected) && !q.sub.resolverWasExtracted)
 								ResErr(q.sub, "Warning: Misplaced resolver: no LL(1) conflict.");
 						} else {
 							BitArray fs = Expected(q.sub, curSy);

@@ -30,6 +30,7 @@ License
     Coco/R itself) does not fall under the GNU General Public License.
 \*---------------------------------------------------------------------------*/
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Collections;
 using System.Text;
@@ -94,9 +95,25 @@ public class ParserGen : AbstractParserGen
 		err.WriteLine("\";");
 	}
 
-	void GenCond (BitArray s, Node p) {
+	void GenCond (BitArray s, Node p, bool allowExtractResolvers) {
 		if (p.typ == Node.rslv) CopySourcePart(p.pos, 0);
-		else {
+		else if (p.typ == Node.alt && allowExtractResolvers) {
+			List<Position> resolvers = new List<Position>();
+			s = new BitArray(s.Length);
+			for (Node node = p; node != null; node = node.down) {
+				if (node.sub.typ == Node.rslv && node.sub.resolverWasExtracted) {
+					resolvers.Add(node.sub.pos);
+				} else {
+					s.Or(tab.First(node.sub));
+				}
+			}
+			GenCond(s, p, false);
+			foreach (Position resolver in resolvers) {
+				gen.Write(" || (");
+				CopySourcePart(resolver, 0);
+				gen.Write(")");
+			}
+		} else {
 			int n = Sets.Elements(s);
 			if (n == 0) gen.Write("false"); // happens if an ANY set matches no symbol
 			else if (n <= maxTerm)
@@ -152,7 +169,7 @@ public class ParserGen : AbstractParserGen
 					} else {
 						GenErrorMsg(altErr, curSy);
 						if (acc > 0) {
-							gen.Write("if ("); GenCond(p.set, p); gen.WriteLine(") Get(); else SynErr({0});", errorNr);
+							gen.Write("if ("); GenCond(p.set, p, false); gen.WriteLine(") Get(); else SynErr({0});", errorNr);
 						} else gen.WriteLine("SynErr({0}); // ANY node that matches no symbol", errorNr);
 					}
 					break;
@@ -169,7 +186,7 @@ public class ParserGen : AbstractParserGen
 					Indent(indent);
 					GenErrorMsg(syncErr, curSy);
 					s1 = (BitArray)p.set.Clone();
-					gen.Write("while (!("); GenCond(s1, p); gen.Write(")) {");
+					gen.Write("while (!("); GenCond(s1, p, false); gen.Write(")) {");
 					gen.Write("SynErr({0}); Get();", errorNr); gen.WriteLine("}");
 					break;
 				}
@@ -185,10 +202,10 @@ public class ParserGen : AbstractParserGen
 						if (useSwitch) {
 							PutCaseLabels(s1); gen.WriteLine("{");
 						} else if (p2 == p) {
-							gen.Write("if ("); GenCond(s1, p2.sub); gen.WriteLine(") {");
+							gen.Write("if ("); GenCond(s1, p2.sub, false); gen.WriteLine(") {");
 						} else if (p2.down == null && equal) { gen.WriteLine("} else {");
 						} else {
-							gen.Write("} else if (");  GenCond(s1, p2.sub); gen.WriteLine(") {");
+							gen.Write("} else if (");  GenCond(s1, p2.sub, false); gen.WriteLine(") {");
 						}
 						GenCode(p2.sub, indent + 1, s1);
 						if (useSwitch) {
@@ -223,7 +240,7 @@ public class ParserGen : AbstractParserGen
 						if (p2.up || p2.next == null) p2 = null; else p2 = p2.next;
 					} else {
 						s1 = tab.First(p2);
-						GenCond(s1, p2);
+						GenCond(s1, p2, true);
 					}
 					gen.WriteLine(") {");
 					GenCode(p2, indent + 1, s1);
@@ -233,7 +250,7 @@ public class ParserGen : AbstractParserGen
 				case Node.opt:
 					s1 = tab.First(p.sub);
 					Indent(indent);
-					gen.Write("if ("); GenCond(s1, p.sub); gen.WriteLine(") {");
+					gen.Write("if ("); GenCond(s1, p.sub, true); gen.WriteLine(") {");
 					GenCode(p.sub, indent + 1, s1);
 					Indent(indent); gen.WriteLine("}");
 					break;
