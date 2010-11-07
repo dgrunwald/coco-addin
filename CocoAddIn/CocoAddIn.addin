@@ -57,4 +57,10 @@
 		            class = "Grunwald.CocoAddIn.CocoTool"
 		            fileNamePattern = "\.atg$"/>
 	</Path>
+	
+	<Path name = "/Workspace/Parser">
+		<Parser id    = "ATG"
+		        supportedextensions  = ".atg"
+		        class = "Grunwald.CocoAddIn.AtgParser"/>
+	</Path>
 </AddIn>

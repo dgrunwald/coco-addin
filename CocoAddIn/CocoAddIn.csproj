@@ -39,12 +39,20 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
   <ItemGroup>
+    <Reference Include="ICSharpCode.AvalonEdit">
+      <HintPath>C:\Program Files %28x86%29\SharpDevelop\4.0\bin\ICSharpCode.AvalonEdit.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="ICSharpCode.Core">
       <HintPath>$(SharpDevelopBinPath)\ICSharpCode.Core.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ICSharpCode.SharpDevelop">
       <HintPath>$(SharpDevelopBinPath)\ICSharpCode.SharpDevelop.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpDevelop.Dom">
+      <HintPath>C:\Program Files %28x86%29\SharpDevelop\4.0\bin\ICSharpCode.SharpDevelop.Dom.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -63,6 +71,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Src\Parser.cs">
+      <DependentUpon>SimpleCocoParser.atg</DependentUpon>
+    </Compile>
+    <Compile Include="Src\Scanner.cs">
+      <DependentUpon>SimpleCocoParser.atg</DependentUpon>
+    </Compile>
+    <Compile Include="Src\SimpleCocoParser.cs" />
     <None Include="..\Coco\src\Parser.frame">
       <Link>Parser.frame</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -81,10 +96,21 @@
     <None Include="license.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Src\Parser.frame">
+      <DependentUpon>SimpleCocoParser.atg</DependentUpon>
+    </None>
+    <None Include="Src\Scanner.frame">
+      <DependentUpon>SimpleCocoParser.atg</DependentUpon>
+    </None>
+    <None Include="Src\SimpleCocoParser.atg">
+      <Generator>CocoParserGenerator</Generator>
+      <CustomToolNamespace>Grunwald.CocoAddIn.CocoParser</CustomToolNamespace>
+    </None>
     <None Include="Templates\CocoParser.xft">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="Configuration\AssemblyInfo.cs" />
+    <Compile Include="Src\AtgParser.cs" />
     <Compile Include="Src\CocoTool.cs" />
     <Compile Include="Src\ErrorsInTaskService.cs" />
     <Compile Include="Src\LazyTextWriter.cs" />
