@@ -831,8 +831,9 @@ public class Tab
 					sym.deletable = true; changed = true;
 				}
 		} while (changed);
-		foreach (Symbol sym in nonterminals)
-			if (sym.deletable && sym != gramSy) errors.Warning("  " + sym.name + " deletable");
+		// deletable symbols are perfectly fine, don't warn
+		//foreach (Symbol sym in nonterminals)
+		//	if (sym.deletable) errors.Warning(sym.line, 0, "  " + sym.name + " deletable");
 	}
 
 	public void RenumberPragmas() {
