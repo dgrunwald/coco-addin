@@ -94,9 +94,6 @@ namespace Grunwald.CocoAddIn
 				CocoCategory.AppendLine("Done. " + parser.errors.count + " error(s).");
 			}
 			
-			if (File.Exists(traceFile)) {
-				context.EnsureOutputFileIsInProject(item, traceFile);
-			}
 			if (File.Exists(parserOutFile)) {
 				context.EnsureOutputFileIsInProject(item, parserOutFile);
 			}
