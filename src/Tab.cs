@@ -359,7 +359,7 @@ public class Tab
 	public ArrayList nodes = new ArrayList();
 	public string[] nTyp =
 		{"    ", "t   ", "pr  ", "nt  ", "clas", "chr ", "wt  ", "any ", "eps ",
-		 "sync", "sem ", "alt ", "iter", "opt ", "rslv"};
+		 "sync", "sem ", "alt ", "iter", "opt ", "rslv", "exCo"};
 	Node dummyNode;
 
 	public Node NewNode(int typ, Symbol sym, int line, int col) {
