@@ -1,0 +1,11 @@
+This SharpDevelop AddIn is a Custom Tool that runs the Coco/R parser generator for C#.
+After installing the AddIn, you will find a new file template in the C# category.
+This template creates three files: Parser.atg, Parser.frame and Scanner.frame.
+Whenever you change Parser.atg inside SharpDevelop or run right-click > Run Custom Tool on it,
+Coco/R will be run on it using the two frame files and generate Parser.cs and Scanner.cs.
+Coco/R errors and warnings will be displayed in the "Output" pad.
+
+For information on Coco/R, see the help file that is installed by the AddIn into the
+Help > Coco/R Help menu.
+The Coco version included contains some modifications to the official Coco,
+see https://github.com/dgrunwald/coco-csharp/wiki for details.

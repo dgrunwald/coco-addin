@@ -1,0 +1,60 @@
+﻿<AddIn name        = "CocoAddIn"
+       author      = "Daniel Grunwald"
+       url         = "http://www.danielgrunwald.de/coding/coco"
+       license     = "GPL"
+       description = "A custom tool that runs Coco/R when editing .atg files">
+	
+	<!--
+// Coco/R Custom Tool - Coco/R integration into SharpDevelop
+// Copyright (C) 2007  Daniel Grunwald
+// 
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+	-->
+	
+	<Manifest>
+		<Identity name="Grunwald.CocoAddIn" version="@CocoAddIn.dll"/>
+		<Dependency addin="SharpDevelop" version="3.0"/>
+	</Manifest>
+	
+	<Runtime>
+		<Import assembly = "CocoAddIn.dll"/>
+	</Runtime>
+	
+	<Path name="/SharpDevelop/Workbench/MainMenu/Help">
+		<MenuItem id = "CocoHelp"
+		          insertafter="Web"
+		          insertbefore="Separator3"
+		          label="Coco/R Help"
+		          class="Grunwald.CocoAddIn.ShowCocoHelpCommand"/>
+	</Path>
+	
+	<Path name = "/SharpDevelop/BackendBindings/Templates">
+		<Directory id = "Coco" path = "./Templates" />
+	</Path>
+	
+	<Path name = "/SharpDevelop/CustomTools">
+		<!--
+			Register the custom tool.
+			id: ID used to identify the custom tool. This ID will be used in project files to reference your generator.
+			class: fully qualified name of a class in your assembly that implements ICustomTool
+			fileNamePattern: a regular expression. For file names matched by this regex, SharpDevelop will display
+			                 your custom tool in the drop down box of the property grid when a file with that extension
+			                 is selected.
+		-->
+		<CustomTool id    = "CocoParserGenerator"
+		            class = "Grunwald.CocoAddIn.CocoTool"
+		            fileNamePattern = "\.atg$"/>
+	</Path>
+</AddIn>

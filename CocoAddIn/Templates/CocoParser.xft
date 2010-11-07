@@ -1,0 +1,68 @@
+﻿<?xml version="1.0"?>
+<Template author="Daniel Grunwald" version="1.0">
+	
+	<Config
+		name        = "Coco/R Parser"
+		icon        = "C#.File.EmptyFile"
+		category    = "C#"
+		defaultname = "Parser${Number}.atg"
+		language    = "C#"/>
+	
+	<Description>A parser generated using Coco/R</Description>
+	
+	<!--
+	Special new file templates:
+		${StandardNamespace}        -> Standardnamespace of the current project or FileNameWithoutExtension
+		${FullName}                 -> Full generated path name
+		${FileName}                 -> File name with extension
+		${FileNameWithoutExtension} -> File name without extension
+		${Extension}                -> Extension in the form ".cs"
+		${Path}                     -> Full path of the file
+		${ClassName}                -> Class name (generally FileNameWithoutExtension w/o 'bad' characters)
+	 -->
+	<Files>
+		<!-- Designer file must come first, so the design tab is shown correctly -->
+		<File name="${Path}/Parser.frame"
+		      src="../Coco/Parser.frame"
+		      DependentUpon="${FileName}" language="Text"/>
+		<File name="${Path}/Scanner.frame"
+		      src="../Coco/Scanner.frame"
+		      DependentUpon="${FileName}" language="Text"/>
+		<File name="${FullName}" language="ATG" Generator="CocoParserGenerator"><![CDATA[COMPILER ${ClassName}
+
+/* Coco/R compiler generation file. See Help > Coco/R Help for more information. */
+
+	// Put C# methods/variables here - they will be copied to the generated Parser.cs
+  
+/*--------------------------------------------------------------------------*/
+CHARACTERS
+  letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
+  digit = "0123456789".
+  cr  = '\r'.
+  lf  = '\n'.
+  tab = '\t'.
+
+TOKENS
+  ident  = letter {letter | digit}.
+  number = digit {digit}.
+
+COMMENTS FROM "/*" TO "*/"
+COMMENTS FROM "//" TO lf
+
+IGNORE cr + lf + tab
+
+
+
+PRODUCTIONS
+/*------------------------------------------------------------------------*/
+${ClassName} =
+	
+.
+
+END ${ClassName}.
+
+]]></File>
+	</Files>
+	
+	<AdditionalOptions/>
+</Template>
