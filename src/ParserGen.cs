@@ -161,7 +161,8 @@ public class ParserGen : AbstractParserGen
 				case Node.rslv: break; // nothing
 				case Node.expectedConflict: break; // nothing
 				case Node.sem: {
-					CopySourcePart(p.pos, indent);
+					if (!IsNamedFirstSet(p.pos))
+						CopySourcePart(p.pos, indent);
 					break;
 				}
 				case Node.sync: {
@@ -312,6 +313,7 @@ public class ParserGen : AbstractParserGen
 		}
 		CopyFramePart("-->constants");
 		GenTokens(); /* ML 2002/09/07 write the token kinds */
+		GenNamedFirstSets();
 		CopyFramePart("-->declarations"); CopySourcePart(semDeclPos, 0);
 
 		CopyFramePart("-->pragmas"); GenCodePragmas();
@@ -331,6 +333,31 @@ public class ParserGen : AbstractParserGen
 		gen.Close();
 		fram.Close();
 		tab.buffer.Pos = oldPos;
+	}
+	
+	string GetSource(Position pos)
+	{
+		StringWriter w = new StringWriter();
+		tab.CopySourcePart(w, pos, 0);
+		return w.ToString();
+	}
+	
+	const string namedFirstSetMarker = "NamedFirstSet:";
+	
+	bool IsNamedFirstSet(Position pos)
+	{
+		return GetSource(pos).StartsWith(namedFirstSetMarker, StringComparison.Ordinal);
+	}
+	
+	void GenNamedFirstSets()
+	{
+		foreach (Node node in tab.nodes) {
+			if (node.typ == Node.sem && IsNamedFirstSet(node.pos)) {
+				string setName = GetSource(node.pos).Substring(namedFirstSetMarker.Length);
+				int setIndex = NewCondSet(tab.First(node));
+				gen.WriteLine("\tpublic const int {0} = {1};", setName, setIndex);
+			}
+		}
 	}
 
 	public override void PrintStatistics () {
