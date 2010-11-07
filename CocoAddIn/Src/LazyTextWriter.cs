@@ -1,5 +1,5 @@
 ﻿// Coco/R Custom Tool - Coco/R integration into SharpDevelop
-// Copyright (C) 2007  Daniel Grunwald
+// Copyright (C) 2007-2010 Daniel Grunwald
 // 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License

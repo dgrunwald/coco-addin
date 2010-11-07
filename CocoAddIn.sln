@@ -1,8 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-# SharpDevelop 4.0.0.5779
+# SharpDevelop 4.0.0.6842
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CocoAddIn", "CocoAddIn\CocoAddIn.csproj", "{83F15BA7-8478-4664-81BB-A82F146D88B3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coco", "Coco\src\Coco.csproj", "{5D7D2C32-1ED6-471D-AA54-83EC5EAAFBBA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,5 +16,9 @@ Global
 		{83F15BA7-8478-4664-81BB-A82F146D88B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{83F15BA7-8478-4664-81BB-A82F146D88B3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{83F15BA7-8478-4664-81BB-A82F146D88B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D7D2C32-1ED6-471D-AA54-83EC5EAAFBBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D7D2C32-1ED6-471D-AA54-83EC5EAAFBBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D7D2C32-1ED6-471D-AA54-83EC5EAAFBBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D7D2C32-1ED6-471D-AA54-83EC5EAAFBBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 EndGlobal

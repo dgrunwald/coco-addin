@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("CocoAddIn")]
-[assembly: AssemblyCopyright("2007, Daniel Grunwald")]
+[assembly: AssemblyCopyright("2007-2010, Daniel Grunwald")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

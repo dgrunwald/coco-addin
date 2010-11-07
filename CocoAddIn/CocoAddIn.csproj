@@ -13,7 +13,7 @@
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.0</TargetFrameworkVersion>
-	<DefineConstants Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">SD4</DefineConstants>
+    <DefineConstants Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">SD4</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -39,11 +39,6 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
   <ItemGroup>
-    <Reference Include="Coco">
-      <HintPath>Coco\Coco.exe</HintPath>
-      <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="ICSharpCode.Core">
       <HintPath>$(SharpDevelopBinPath)\ICSharpCode.Core.dll</HintPath>
       <Private>False</Private>
@@ -68,26 +63,23 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Coco\Coco.exe">
+    <None Include="..\Coco\src\Parser.frame">
+      <Link>Parser.frame</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Coco\license.txt">
+    <None Include="..\Coco\src\PushParser.frame">
+      <Link>PushParser.frame</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Coco\Parser.frame">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Coco\PushParser.frame">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Coco\Scanner.frame">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Coco\UserManual.pdf">
+    <None Include="..\Coco\src\Scanner.frame">
+      <Link>Scanner.frame</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="CocoAddIn.addin">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="license.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Templates\CocoParser.xft">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -98,10 +90,18 @@
     <Compile Include="Src\LazyTextWriter.cs" />
     <Compile Include="Src\MessageViewCategoryWriter.cs" />
     <Compile Include="Src\ShowCocoHelpCommand.cs" />
+    <None Include="UserManual.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Coco" />
     <Folder Include="Templates" />
     <Folder Include="Src" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Coco\src\Coco.csproj">
+      <Project>{5D7D2C32-1ED6-471D-AA54-83EC5EAAFBBA}</Project>
+      <Name>Coco</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>
