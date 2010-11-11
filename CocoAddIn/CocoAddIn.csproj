@@ -39,8 +39,8 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
   <ItemGroup>
-    <Reference Include="ICSharpCode.AvalonEdit">
-      <HintPath>C:\Program Files %28x86%29\SharpDevelop\4.0\bin\ICSharpCode.AvalonEdit.dll</HintPath>
+    <Reference Include="ICSharpCode.AvalonEdit" Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">
+      <HintPath>$(SharpDevelopBinPath)\ICSharpCode.AvalonEdit.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ICSharpCode.Core">
@@ -52,7 +52,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="ICSharpCode.SharpDevelop.Dom">
-      <HintPath>C:\Program Files %28x86%29\SharpDevelop\4.0\bin\ICSharpCode.SharpDevelop.Dom.dll</HintPath>
+      <HintPath>$(SharpDevelopBinPath)\ICSharpCode.SharpDevelop.Dom.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -71,13 +71,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Src\Parser.cs">
+    <Compile Include="Src\Parser.cs" Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">
       <DependentUpon>SimpleCocoParser.atg</DependentUpon>
     </Compile>
-    <Compile Include="Src\Scanner.cs">
+    <Compile Include="Src\Scanner.cs" Condition="'$(TargetFrameworkVersion)' == 'v4.0' ">
       <DependentUpon>SimpleCocoParser.atg</DependentUpon>
     </Compile>
-    <Compile Include="Src\SimpleCocoParser.cs" />
+    <Compile Include="Src\SimpleCocoParser.cs" Condition="'$(TargetFrameworkVersion)' == 'v4.0' "/>
     <None Include="..\Coco\src\Parser.frame">
       <Link>Parser.frame</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -110,7 +110,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="Configuration\AssemblyInfo.cs" />
-    <Compile Include="Src\AtgParser.cs" />
+    <Compile Include="Src\AtgParser.cs" Condition="'$(TargetFrameworkVersion)' == 'v4.0' "/>
     <Compile Include="Src\CocoTool.cs" />
     <Compile Include="Src\ErrorsInTaskService.cs" />
     <Compile Include="Src\LazyTextWriter.cs" />
