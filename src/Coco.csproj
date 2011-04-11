@@ -60,6 +60,7 @@
   <ItemGroup>
     <None Include="Coco-cs.atg">
       <Generator>CocoParserGenerator</Generator>
+      <LastGenOutput>Scanner.cs</LastGenOutput>
     </None>
     <None Include="Parser.frame">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

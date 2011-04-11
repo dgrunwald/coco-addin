@@ -300,6 +300,8 @@ TokenDecl<int typ>              (. string name; int kind; Symbol sym; Graph g; .
 
 AttrDecl<Symbol sym>
 =
+  "<auto>"                      (. sym.isAuto = true; sym.attrPos = new Position(t.pos, t.pos + 6, t.col, t.line); .)
+|
   '<'                           (. int beg = la.pos; int col = la.col; .)
   { ANY
   | badString                   (. SemErr("bad string in attributes"); .)

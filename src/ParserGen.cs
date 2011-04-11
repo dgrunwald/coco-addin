@@ -293,7 +293,10 @@ public class ParserGen : AbstractParserGen
 		foreach (Symbol sym in tab.nonterminals) {
 			curSy = sym;
 			gen.Write("\tvoid {0}(", sym.name);
-			CopySourcePart(sym.attrPos, 0);
+			if (sym.isAuto)
+				gen.Write("out {0} result", sym.name);
+			else
+				CopySourcePart(sym.attrPos, 0);
 			gen.WriteLine(") {");
 			CopySourcePart(sym.semPos, 2);
 			GenCode(sym.graph, 2, new BitArray(tab.terminals.Count));

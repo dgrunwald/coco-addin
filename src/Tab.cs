@@ -81,6 +81,7 @@ public class Symbol
 	public Position attrPos;     //!< nt: position of attributes in source text (or null)
 	public Position semPos;      //!< pr: pos of semantic action in source text (or null)
 	                             //!< nt: pos of local declarations in source text (or null)
+	public bool     isAuto;
 
 	public Symbol(int typ, string name, int line) {
 		this.typ = typ; this.name = name; this.line = line;
