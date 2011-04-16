@@ -1,0 +1,1 @@
+%windir%\Microsoft.Net\Framework\v2.0.50727\MSBuild.exe Coco.sln /p:Configuration=Release /p:Platform="Any CPU"
