@@ -151,6 +151,12 @@ public class ParserGen : AbstractParserGen
 					// assert: if isChecked[p.sym.n] is true, then isChecked contains only p.sym.n
 					if (isChecked[p.sym.n]) gen.WriteLine("Get();");
 					else gen.WriteLine("Expect({0});", p.sym.n);
+					if (p.pos != null) {
+						Indent(indent);
+						gen.Write("AddTerminal(");
+						CopySourcePart(p.pos, 0);
+						gen.WriteLine(");");
+					}
 					break;
 				}
 				case Node.wt: {
@@ -294,12 +300,16 @@ public class ParserGen : AbstractParserGen
 			curSy = sym;
 			gen.Write("\tvoid {0}(", sym.name);
 			if (sym.isAuto)
-				gen.Write("out {0} result", sym.name);
+				gen.Write("Role role");
 			else
 				CopySourcePart(sym.attrPos, 0);
 			gen.WriteLine(") {");
+			if (sym.isAuto)
+				gen.WriteLine("\t\tvar result = new {0}(); NodeStart(result);", sym.name);
 			CopySourcePart(sym.semPos, 2);
 			GenCode(sym.graph, 2, new BitArray(tab.terminals.Count));
+			if (sym.isAuto)
+				gen.WriteLine("\t\tNodeEnd(result, role);");
 			gen.WriteLine("\t}"); gen.WriteLine();
 		}
 	}

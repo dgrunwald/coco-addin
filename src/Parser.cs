@@ -609,11 +609,10 @@ Symbol ForwardDeclare(string name, int kind) {
 
 			if (la.kind == 30 || la.kind == 32) {
 				Attribs(p);
-				if (kind == isLiteral) SemErr("a literal must not have attributes");
 			}
 			if (undef)
 			    sym.attrPos = p.pos;  // dummy
-			  else if ((p.pos == null) != (sym.attrPos == null))
+			  else if (kind != isLiteral && (p.pos == null) != (sym.attrPos == null || sym.isAuto))
 			    SemErr("attribute mismatch between declaration and use of this symbol");
 
 			break;

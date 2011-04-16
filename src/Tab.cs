@@ -139,7 +139,7 @@ public class Node
 	public List<Symbol> conflictSymbols; //!< expectedConflict: terminal symbols
 	
 	public bool resolverWasExtracted; // rslv: was extracted into parent iter/opt
-
+	
 	public Node(int typ, Symbol sym, int line, int col) {
 		this.typ = typ; this.sym = sym; this.line = line; this.col = col;
 	}
