@@ -90,6 +90,8 @@ PRAGMAS
     directive = '$' letter { letter } '='
         { digit | letter | '-' | '.' | ':' | '/' | '\\' } .
                                 (. tab.DispatchDirective(la.val); .)
+    region = "#region" '"' { stringCh | '\\' printable } '"' .
+    endregion = "#endregion" .
 
 
 COMMENTS FROM "/*" TO "*/" NESTED

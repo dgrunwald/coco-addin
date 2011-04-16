@@ -53,6 +53,8 @@ public partial class Parser
 	public const int maxT = 50;  //<! max term (w/o pragmas)
 	public const int _ddtSym = 51;
 	public const int _directive = 52;
+	public const int _region = 53;
+	public const int _endregion = 54;
 
 	const bool T = true;
 	const bool x = false;
@@ -118,6 +120,10 @@ Symbol ForwardDeclare(string name, int kind) {
 				}
 				if (la.kind == 52) {
 				tab.DispatchDirective(la.val);
+				}
+				if (la.kind == 53) {
+				}
+				if (la.kind == 54) {
 				}
 
 			la = t;
