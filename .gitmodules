@@ -1,3 +1,0 @@
-[submodule "Coco"]
-	path = Coco
-	url = git://github.com/dgrunwald/coco-csharp.git
