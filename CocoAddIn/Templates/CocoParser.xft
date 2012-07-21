@@ -23,10 +23,10 @@
 	<Files>
 		<!-- Designer file must come first, so the design tab is shown correctly -->
 		<File name="${Path}/Parser.frame"
-		      src="../Coco/Parser.frame"
+		      src="../Parser.frame"
 		      DependentUpon="${FileName}" language="Text"/>
 		<File name="${Path}/Scanner.frame"
-		      src="../Coco/Scanner.frame"
+		      src="../Scanner.frame"
 		      DependentUpon="${FileName}" language="Text"/>
 		<File name="${FullName}" language="ATG" Generator="CocoParserGenerator"><![CDATA[COMPILER ${ClassName}
 

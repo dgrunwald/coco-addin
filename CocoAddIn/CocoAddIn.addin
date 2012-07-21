@@ -25,7 +25,7 @@
 	
 	<Manifest>
 		<Identity name="Grunwald.CocoAddIn" version="@CocoAddIn.dll"/>
-		<Dependency addin="SharpDevelop" version="4.0"/>
+		<Dependency addin="SharpDevelop" version="4.0-4.3"/>
 	</Manifest>
 	
 	<Runtime>
